@@ -1,0 +1,370 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID" },
+        "email": { "type": "string", "format": "email", "description": "The user's email address" },
+        "displayName": { "type": "string", "description": "The user's display name" },
+        "photoURL": { "type": "string", "description": "The user's profile photo URL" },
+        "role": { "type": "string", "enum": ["admin", "user", "pastor", "leader"], "description": "The user's role" },
+        "churchId": { "type": "string", "description": "The ID of the church the user belongs to" },
+        "createdAt": { "type": "timestamp", "description": "When the user was created" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "Church": {
+      "title": "Church",
+      "description": "A church tenant in the platform",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The church's unique ID" },
+        "name": { "type": "string", "description": "The name of the church" },
+        "inviteCode": { "type": "string", "description": "The invite code to join the church" },
+        "ownerId": { "type": "string", "description": "The ID of the user who created the church" },
+        "createdAt": { "type": "timestamp", "description": "When the church was created" }
+      },
+      "required": ["id", "name", "inviteCode", "ownerId", "createdAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A community post within a church",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The post's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church this post belongs to" },
+        "authorId": { "type": "string", "description": "The ID of the user who created the post" },
+        "authorName": { "type": "string", "description": "The name of the user who created the post" },
+        "authorPhoto": { "type": "string", "description": "The photo URL of the user who created the post" },
+        "content": { "type": "string", "description": "The main content of the post" },
+        "type": { "type": "string", "enum": ["prayer", "testimony", "announcement"], "description": "The type of the post" },
+        "likesCount": { "type": "number", "description": "The number of likes on the post" },
+        "createdAt": { "type": "timestamp", "description": "When the post was created" }
+      },
+      "required": ["id", "churchId", "authorId", "authorName", "content", "type", "likesCount", "createdAt"]
+    },
+    "PrayerRequest": {
+      "title": "PrayerRequest",
+      "description": "A dedicated prayer request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The prayer request's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "authorId": { "type": "string", "description": "The ID of the user who created the request" },
+        "authorName": { "type": "string", "description": "The name of the author" },
+        "authorPhoto": { "type": "string", "description": "The photo URL of the author" },
+        "content": { "type": "string", "description": "The prayer request content" },
+        "category": { "type": "string", "enum": ["Saúde", "Família", "Finanças", "Espiritual", "Outros"], "description": "The category of the prayer" },
+        "isPrivate": { "type": "boolean", "description": "Whether the request is only for the pastoral team" },
+        "status": { "type": "string", "enum": ["active", "answered"], "description": "The status of the prayer" },
+        "intercessorsCount": { "type": "number", "description": "The number of people interceding" },
+        "testimony": { "type": "string", "description": "The testimony of the answered prayer" },
+        "createdAt": { "type": "timestamp", "description": "When the request was created" },
+        "answeredAt": { "type": "timestamp", "description": "When the prayer was answered" }
+      },
+      "required": ["id", "churchId", "authorId", "authorName", "content", "category", "isPrivate", "status", "intercessorsCount", "createdAt"]
+    },
+    "Intercession": {
+      "title": "Intercession",
+      "description": "A record of someone interceding for a prayer request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The intercession's unique ID" },
+        "prayerRequestId": { "type": "string", "description": "The ID of the prayer request" },
+        "intercessorId": { "type": "string", "description": "The ID of the user interceding" },
+        "intercessorName": { "type": "string", "description": "The name of the intercessor" },
+        "createdAt": { "type": "timestamp", "description": "When the intercession started" }
+      },
+      "required": ["id", "prayerRequestId", "intercessorId", "intercessorName", "createdAt"]
+    },
+    "SpiritualEntry": {
+      "title": "SpiritualEntry",
+      "description": "A diary entry or spiritual record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number", "description": "The entry's unique ID (timestamp)" },
+        "userId": { "type": "string", "description": "The ID of the user who created the entry" },
+        "date": { "type": "string", "description": "The date of the entry in ISO format" },
+        "title": { "type": "string", "description": "The title of the entry" },
+        "category": { "type": "string", "description": "The category of the entry" },
+        "description": { "type": "string", "description": "The main content of the entry" },
+        "lessonsLearned": { "type": "string", "description": "Lessons learned from the entry" },
+        "bibleVerse": { "type": "string", "description": "A related Bible verse" },
+        "impact": { "type": "string", "enum": ["Baixo", "Médio", "Alto"], "description": "The impact level" },
+        "isMemorial": { "type": "boolean", "description": "Whether the entry is a memorial" },
+        "createdAt": { "type": "timestamp", "description": "When the entry was created" }
+      },
+      "required": ["id", "userId", "date", "title", "category", "description", "lessonsLearned", "impact", "isMemorial", "createdAt"]
+    },
+    "DevotionalStats": {
+      "title": "DevotionalStats",
+      "description": "Statistics for a user's devotional habits",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user" },
+        "completed": { "type": "number", "description": "Total number of completed devotionals" },
+        "streak": { "type": "number", "description": "Current streak of consecutive days" },
+        "lastDate": { "type": "string", "description": "The date of the last completed devotional" },
+        "favorites": { "type": "array", "items": { "type": "string" }, "description": "List of favorite verses or devotionals" },
+        "updatedAt": { "type": "timestamp", "description": "When the stats were last updated" }
+      },
+      "required": ["userId", "completed", "streak", "lastDate", "favorites", "updatedAt"]
+    },
+    "Ministry": {
+      "title": "Ministry",
+      "description": "A ministry or department within a church",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The ministry's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "name": { "type": "string", "description": "The name of the ministry" },
+        "description": { "type": "string", "description": "The description of the ministry" },
+        "leaderId": { "type": "string", "description": "The ID of the ministry leader" },
+        "members": { "type": "array", "items": { "type": "string" }, "description": "List of member UIDs" },
+        "createdAt": { "type": "timestamp", "description": "When the ministry was created" }
+      },
+      "required": ["id", "churchId", "name", "leaderId", "createdAt"]
+    },
+    "Cell": {
+      "title": "Cell",
+      "description": "A small group or cell within a church",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The cell's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "name": { "type": "string", "description": "The name of the cell" },
+        "leaderId": { "type": "string", "description": "The ID of the cell leader" },
+        "hostName": { "type": "string", "description": "The name of the host" },
+        "address": { "type": "string", "description": "The address where the cell meets" },
+        "meetingDay": { "type": "string", "description": "The day of the week the cell meets" },
+        "meetingTime": { "type": "string", "description": "The time the cell meets" },
+        "members": { "type": "array", "items": { "type": "string" }, "description": "List of member UIDs" },
+        "createdAt": { "type": "timestamp", "description": "When the cell was created" }
+      },
+      "required": ["id", "churchId", "name", "leaderId", "createdAt"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "An event organized by the church",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The event's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "title": { "type": "string", "description": "The title of the event" },
+        "description": { "type": "string", "description": "The description of the event" },
+        "date": { "type": "timestamp", "description": "The date and time of the event" },
+        "location": { "type": "string", "description": "The location of the event" },
+        "bannerUrl": { "type": "string", "description": "The URL of the event banner image" },
+        "isPublic": { "type": "boolean", "description": "Whether the event is public" },
+        "createdAt": { "type": "timestamp", "description": "When the event was created" }
+      },
+      "required": ["id", "churchId", "title", "date", "createdAt"]
+    },
+    "FinancialTransaction": {
+      "title": "FinancialTransaction",
+      "description": "A financial record (tithe, offering, expense)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The transaction's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "userId": { "type": "string", "description": "The ID of the user (for tithes/offerings)" },
+        "amount": { "type": "number", "description": "The amount of the transaction" },
+        "type": { "type": "string", "enum": ["income", "expense"], "description": "The type of transaction" },
+        "category": { "type": "string", "description": "The category (e.g., Tithe, Offering, Rent)" },
+        "description": { "type": "string", "description": "The description of the transaction" },
+        "date": { "type": "timestamp", "description": "The date of the transaction" },
+        "createdAt": { "type": "timestamp", "description": "When the record was created" }
+      },
+      "required": ["id", "churchId", "amount", "type", "category", "date", "createdAt"]
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "description": "A ministry schedule for an event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The schedule's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "ministryId": { "type": "string", "description": "The ID of the ministry" },
+        "eventId": { "type": "string", "description": "The ID of the event" },
+        "eventTitle": { "type": "string", "description": "The title of the event" },
+        "date": { "type": "string", "description": "The date of the schedule" },
+        "roles": { "type": "array", "items": { "type": "object" }, "description": "List of roles and assigned users" },
+        "createdAt": { "type": "timestamp", "description": "When the schedule was created" }
+      },
+      "required": ["churchId", "ministryId", "eventId", "eventTitle", "date", "roles", "createdAt"]
+    },
+    "EBDClass": {
+      "title": "EBDClass",
+      "description": "An EBD (Escola Bíblica Dominical) class",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The class's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "name": { "type": "string", "description": "The name of the class" },
+        "teacherId": { "type": "string", "description": "The ID of the teacher" },
+        "teacherName": { "type": "string", "description": "The name of the teacher" },
+        "category": { "type": "string", "description": "The category of the class" },
+        "description": { "type": "string", "description": "The description of the class" },
+        "studentCount": { "type": "number", "description": "The number of students in the class" },
+        "createdAt": { "type": "timestamp", "description": "When the class was created" }
+      },
+      "required": ["id", "churchId", "name", "teacherId", "teacherName", "createdAt"]
+    },
+    "EBDLesson": {
+      "title": "EBD Lesson",
+      "description": "A lesson within an EBD class.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The lesson's unique ID" },
+        "classId": { "type": "string", "description": "The ID of the EBD class" },
+        "title": { "type": "string", "description": "The title of the lesson" },
+        "content": { "type": "string", "description": "The content of the lesson (Markdown)" },
+        "videoUrl": { "type": "string", "description": "The URL of the lesson's video" },
+        "order": { "type": "number", "description": "The order of the lesson in the class" },
+        "createdAt": { "type": "timestamp", "description": "When the lesson was created" }
+      },
+      "required": ["id", "classId", "title", "content", "order", "createdAt"]
+    },
+    "EBDEnrollment": {
+      "title": "EBD Enrollment",
+      "description": "A student's enrollment in an EBD class.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The enrollment's unique ID" },
+        "classId": { "type": "string", "description": "The ID of the EBD class" },
+        "studentId": { "type": "string", "description": "The ID of the student" },
+        "status": { "type": "string", "enum": ["active", "completed"], "description": "The status of the enrollment" },
+        "progress": { "type": "number", "description": "The percentage of completion" },
+        "enrolledAt": { "type": "timestamp", "description": "When the student enrolled" }
+      },
+      "required": ["id", "classId", "studentId", "status", "progress", "enrolledAt"]
+    },
+    "EBDProgress": {
+      "title": "EBD Progress",
+      "description": "A student's progress in a specific lesson.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The progress record's unique ID" },
+        "enrollmentId": { "type": "string", "description": "The ID of the enrollment" },
+        "lessonId": { "type": "string", "description": "The ID of the lesson" },
+        "completed": { "type": "boolean", "description": "Whether the lesson is completed" },
+        "completedAt": { "type": "timestamp", "description": "When the lesson was completed" }
+      },
+      "required": ["id", "enrollmentId", "lessonId", "completed"]
+    },
+    "MarketplaceItem": {
+      "title": "MarketplaceItem",
+      "description": "An item or service offered in the church marketplace",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The item's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "authorId": { "type": "string", "description": "The ID of the user offering the item" },
+        "authorName": { "type": "string", "description": "The name of the author" },
+        "title": { "type": "string", "description": "The title of the item/service" },
+        "description": { "type": "string", "description": "The description of the item/service" },
+        "price": { "type": "number", "description": "The price of the item/service" },
+        "category": { "type": "string", "description": "The category (e.g., Products, Services)" },
+        "imageUrl": { "type": "string", "description": "The URL of the item image" },
+        "contactPhone": { "type": "string", "description": "The contact phone number" },
+        "status": { "type": "string", "enum": ["active", "sold", "inactive"], "description": "The status of the item" },
+        "createdAt": { "type": "timestamp", "description": "When the item was created" }
+      },
+      "required": ["id", "churchId", "authorId", "authorName", "title", "description", "category", "status", "createdAt"]
+    },
+    "Visitor": {
+      "title": "Visitor",
+      "description": "A visitor record for the church",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The visitor's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "name": { "type": "string", "description": "The visitor's name" },
+        "phone": { "type": "string", "description": "The visitor's phone number" },
+        "email": { "type": "string", "description": "The visitor's email" },
+        "visitDate": { "type": "timestamp", "description": "The date of the visit" },
+        "invitedBy": { "type": "string", "description": "Who invited the visitor" },
+        "status": { "type": "string", "enum": ["new", "followed_up", "member", "inactive"], "description": "The status of the visitor" },
+        "notes": { "type": "string", "description": "Pastoral notes about the visitor" },
+        "createdAt": { "type": "timestamp", "description": "When the record was created" }
+      },
+      "required": ["id", "churchId", "name", "visitDate", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles"
+    },
+    "/churches/{churchId}": {
+      "schema": { "$ref": "#/entities/Church" },
+      "description": "Stores church tenants"
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Stores community posts"
+    },
+    "/prayer_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PrayerRequest" },
+      "description": "Stores dedicated prayer requests"
+    },
+    "/prayer_requests/{requestId}/intercessions/{intercessionId}": {
+      "schema": { "$ref": "#/entities/Intercession" },
+      "description": "Stores intercessions for a prayer request"
+    },
+    "/users/{userId}/entries/{entryId}": {
+      "schema": { "$ref": "#/entities/SpiritualEntry" },
+      "description": "Stores spiritual diary entries for a user"
+    },
+    "/users/{userId}/stats/devotional": {
+      "schema": { "$ref": "#/entities/DevotionalStats" },
+      "description": "Stores devotional statistics for a user"
+    },
+    "/ministries/{ministryId}": {
+      "schema": { "$ref": "#/entities/Ministry" },
+      "description": "Stores ministries for all churches"
+    },
+    "/cells/{cellId}": {
+      "schema": { "$ref": "#/entities/Cell" },
+      "description": "Stores cells for all churches"
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Stores events for all churches"
+    },
+    "/finances/{transactionId}": {
+      "schema": { "$ref": "#/entities/FinancialTransaction" },
+      "description": "Stores financial transactions for all churches"
+    },
+    "/schedules/{scheduleId}": {
+      "schema": { "$ref": "#/entities/Schedule" },
+      "description": "Stores schedules for all churches"
+    },
+    "/ebd_classes/{classId}": {
+      "schema": { "$ref": "#/entities/EBDClass" },
+      "description": "Stores EBD classes for all churches"
+    },
+    "/ebd_classes/{classId}/lessons/{lessonId}": {
+      "schema": { "$ref": "#/entities/EBDLesson" },
+      "description": "Stores lessons for an EBD class"
+    },
+    "/ebd_enrollments/{enrollmentId}": {
+      "schema": { "$ref": "#/entities/EBDEnrollment" },
+      "description": "Stores student enrollments in EBD classes"
+    },
+    "/ebd_enrollments/{enrollmentId}/progress/{progressId}": {
+      "schema": { "$ref": "#/entities/EBDProgress" },
+      "description": "Stores progress for each lesson in an enrollment"
+    },
+    "/marketplace_items/{itemId}": {
+      "schema": { "$ref": "#/entities/MarketplaceItem" },
+      "description": "Stores items and services in the church marketplace"
+    },
+    "/visitors/{visitorId}": {
+      "schema": { "$ref": "#/entities/Visitor" },
+      "description": "Stores visitor records for the church"
+    }
+  }
+}

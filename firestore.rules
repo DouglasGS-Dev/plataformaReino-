@@ -1,0 +1,528 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required) - The user's unique ID
+    //   - email: string (required) - The user's email address
+    //   - displayName: string (optional) - The user's display name
+    //   - photoURL: string (optional) - The user's profile photo URL
+    //   - role: string (required) - The user's role (admin, user, pastor, leader)
+    //   - churchId: string (optional) - The ID of the church the user belongs to
+    //   - bio: string (optional) - User's bio or testimony
+    //   - phone: string (optional) - User's phone number
+    //   - birthDate: string (optional) - User's birth date
+    //   - ministry: string (optional) - User's ministry or cell
+    //   - socialLinks: map (optional) - User's social links (instagram, facebook, whatsapp)
+    //   - createdAt: timestamp (required) - When the user profile was created
+    //   - updatedAt: timestamp (optional) - When the user profile was last updated
+    //
+    // Collection: users/{userId}/entries
+    // Document ID: {entryId}
+    // Fields:
+    //   - id: number (required) - The entry's unique ID (timestamp)
+    //   - userId: string (required) - The ID of the user who created the entry
+    //   - date: string (required) - The date of the entry in ISO format
+    //   - title: string (required) - The title of the entry
+    //   - category: string (required) - The category of the entry
+    //   - description: string (required) - The main content of the entry
+    //   - lessonsLearned: string (required) - Lessons learned from the entry
+    //   - bibleVerse: string (optional) - A related Bible verse
+    //   - impact: string (required) - The impact level ('Baixo', 'Médio', 'Alto')
+    //   - isMemorial: boolean (required) - Whether the entry is a memorial
+    //   - createdAt: timestamp (required) - When the entry was created
+    //
+    // Collection: users/{userId}/stats
+    // Document ID: devotional
+    // Fields:
+    //   - userId: string (required) - The ID of the user
+    //   - completed: number (required) - Total number of completed devotionals
+    //   - streak: number (required) - Current streak of consecutive days
+    //   - lastDate: string (required) - The date of the last completed devotional
+    //   - favorites: list (required) - List of favorite verses or devotionals
+    //   - updatedAt: timestamp (required) - When the stats were last updated
+    //
+    // Collection: posts/{postId}/comments
+    // Document ID: {commentId}
+    // Fields:
+    //   - id: string (required) - The comment's unique ID
+    //   - postId: string (required) - The ID of the post
+    //   - authorId: string (required) - The ID of the user who created the comment
+    //   - authorName: string (required) - The name of the author
+    //   - authorPhoto: string (optional) - The photo URL of the author
+    //   - authorRole: string (optional) - The role of the author
+    //   - content: string (required) - The content of the comment
+    //   - createdAt: timestamp (required) - When the comment was created
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "douglassousa95475@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+    
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+    
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+    
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+    
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'role', 'createdAt']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 500)) &&
+             (!('churchId' in data) || (data.churchId is string && data.churchId.size() < 100)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() < 1000)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() < 30)) &&
+             (!('birthDate' in data) || (data.birthDate is string && data.birthDate.size() < 20)) &&
+             (!('ministry' in data) || (data.ministry is string && data.ministry.size() < 100)) &&
+             (!('socialLinks' in data) || (data.socialLinks is map)) &&
+             data.role in ['admin', 'user', 'pastor', 'leader'] &&
+             data.createdAt is timestamp &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+    
+    function isValidChurch(data) {
+      return hasRequiredFields(['id', 'name', 'inviteCode', 'ownerId', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.inviteCode is string && data.inviteCode.size() > 0 && data.inviteCode.size() < 50 &&
+             data.ownerId is string && data.ownerId.size() > 0 &&
+             data.createdAt is timestamp;
+    }
+    
+    function isValidPost(data) {
+      return hasRequiredFields(['id', 'churchId', 'authorId', 'authorName', 'content', 'type', 'likesCount', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.churchId is string && data.churchId.size() > 0 &&
+             data.authorId is string && data.authorId.size() > 0 &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100 &&
+             (!('authorPhoto' in data) || (data.authorPhoto is string && data.authorPhoto.size() < 500)) &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+             data.type in ['prayer', 'testimony', 'announcement'] &&
+             data.likesCount is number && data.likesCount >= 0 &&
+             (!('commentsCount' in data) || (data.commentsCount is number && data.commentsCount >= 0)) &&
+             data.createdAt is timestamp &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+             (!('bibleVerse' in data) || data.bibleVerse == null || (data.bibleVerse is string && data.bibleVerse.size() < 500)) &&
+             (!('media' in data) || data.media == null || (data.media is list && data.media.size() <= 10)) &&
+             (!('aspectRatio' in data) || data.aspectRatio == null || (data.aspectRatio in ['1:1', '4:5', '16:9', '9:16'])) &&
+             (!('audio' in data) || data.audio == null || (data.audio is map));
+    }
+
+    function isValidPrayerRequest(data) {
+      return hasRequiredFields(['id', 'churchId', 'authorId', 'authorName', 'content', 'category', 'isPrivate', 'status', 'intercessorsCount', 'createdAt']) &&
+             data.id is string && data.churchId is string &&
+             data.authorId is string && data.authorName is string &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+             data.category in ["Saúde", "Família", "Finanças", "Espiritual", "Outros"] &&
+             data.isPrivate is bool &&
+             data.status in ["active", "answered"] &&
+             data.intercessorsCount is number &&
+             data.createdAt is timestamp &&
+             (!('testimony' in data) || data.testimony is string) &&
+             (!('answeredAt' in data) || data.answeredAt is timestamp);
+    }
+
+    function isValidIntercession(data) {
+      return hasRequiredFields(['id', 'prayerRequestId', 'intercessorId', 'intercessorName', 'createdAt']) &&
+             data.id is string && data.prayerRequestId is string &&
+             data.intercessorId is string && data.intercessorName is string &&
+             data.createdAt is timestamp;
+    }
+    
+    function isValidEBDClass(data) {
+      return hasRequiredFields(['id', 'churchId', 'name', 'teacherId', 'teacherName', 'createdAt']) &&
+             data.id is string && data.churchId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.teacherId is string && data.teacherName is string &&
+             data.createdAt is timestamp &&
+             (!('category' in data) || data.category is string) &&
+             (!('description' in data) || data.description is string) &&
+             (!('studentCount' in data) || data.studentCount is number);
+    }
+
+    function isValidEBDLesson(data) {
+      return hasRequiredFields(['id', 'classId', 'title', 'content', 'order', 'createdAt']) &&
+             data.id is string && data.classId is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
+             data.order is number &&
+             data.createdAt is timestamp &&
+             (!('videoUrl' in data) || data.videoUrl is string);
+    }
+
+    function isValidEBDEnrollment(data) {
+      return hasRequiredFields(['id', 'classId', 'studentId', 'status', 'progress', 'enrolledAt']) &&
+             data.id is string && data.classId is string &&
+             data.studentId is string &&
+             data.status in ['active', 'completed'] &&
+             data.progress is number && data.progress >= 0 && data.progress <= 100 &&
+             data.enrolledAt is timestamp;
+    }
+
+    function isValidEBDProgress(data) {
+      return hasRequiredFields(['id', 'enrollmentId', 'lessonId', 'completed']) &&
+             data.id is string && data.enrollmentId is string &&
+             data.lessonId is string &&
+             data.completed is bool &&
+             (!('completedAt' in data) || data.completedAt is timestamp);
+    }
+    
+    function isValidEntry(data) {
+      return hasRequiredFields(['id', 'userId', 'date', 'title', 'category', 'description', 'lessonsLearned', 'impact', 'isMemorial', 'createdAt']) &&
+             data.id is number &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
+             data.date is string && data.date.size() < 50 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 5000 &&
+             data.lessonsLearned is string && data.lessonsLearned.size() < 2000 &&
+             (!('bibleVerse' in data) || data.bibleVerse == null || (data.bibleVerse is string && data.bibleVerse.size() < 500)) &&
+             data.impact in ['Baixo', 'Médio', 'Alto'] &&
+             data.isMemorial is bool &&
+             data.createdAt is timestamp &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+             (!('media' in data) || data.media == null || (data.media is list && data.media.size() <= 10)) &&
+             (!('aspectRatio' in data) || data.aspectRatio == null || (data.aspectRatio in ['1:1', '4:5', '16:9', '9:16'])) &&
+             (!('music' in data) || data.music == null || (data.music is map)) &&
+             (!('audio' in data) || data.audio == null || (data.audio is map));
+    }
+    
+    function isValidStats(data) {
+      return hasRequiredFields(['userId', 'completed', 'streak', 'lastDate', 'favorites', 'updatedAt']) &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
+             data.completed is number && data.completed >= 0 &&
+             data.streak is number && data.streak >= 0 &&
+             data.lastDate is string && data.lastDate.size() < 50 &&
+             data.favorites is list && data.favorites.size() <= 100 &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidMinistry(data) {
+      return hasRequiredFields(['id', 'churchId', 'name', 'leaderId', 'createdAt']) &&
+             data.id is string && data.churchId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.leaderId is string &&
+             (!('members' in data) || data.members is list) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidCell(data) {
+      return hasRequiredFields(['id', 'churchId', 'name', 'leaderId', 'createdAt']) &&
+             data.id is string && data.churchId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.leaderId is string &&
+             (!('members' in data) || data.members is list) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidEvent(data) {
+      return hasRequiredFields(['id', 'churchId', 'title', 'date', 'createdAt']) &&
+             data.id is string && data.churchId is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.date is timestamp &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidFinancialTransaction(data) {
+      return hasRequiredFields(['id', 'churchId', 'amount', 'type', 'category', 'date', 'createdAt']) &&
+             data.id is string && data.churchId is string &&
+             data.amount is number &&
+             data.type in ['income', 'expense'] &&
+             data.category is string &&
+             data.date is timestamp &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidSchedule(data) {
+      return hasRequiredFields(['churchId', 'ministryId', 'eventId', 'eventTitle', 'date', 'roles', 'createdAt']) &&
+             data.churchId is string &&
+             data.ministryId is string &&
+             data.eventId is string &&
+             data.eventTitle is string &&
+             data.date is string &&
+             data.roles is list &&
+             data.createdAt is string;
+    }
+
+    function isValidComment(data) {
+      return hasRequiredFields(['id', 'postId', 'authorId', 'authorName', 'content', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.postId is string && data.postId.size() > 0 &&
+             data.authorId is string && data.authorId.size() > 0 &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100 &&
+             (!('authorPhoto' in data) || (data.authorPhoto is string && data.authorPhoto.size() < 500)) &&
+             (!('authorRole' in data) || (data.authorRole is string && data.authorRole.size() < 50)) &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 1000 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidMarketplaceItem(data) {
+      return hasRequiredFields(['id', 'churchId', 'authorId', 'authorName', 'title', 'description', 'category', 'status', 'createdAt']) &&
+             data.id is string &&
+             data.churchId is string &&
+             data.authorId is string &&
+             data.authorName is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 1000 &&
+             data.category is string &&
+             data.status in ['active', 'sold', 'inactive'] &&
+             data.createdAt is timestamp &&
+             (!('price' in data) || data.price is number) &&
+             (!('imageUrl' in data) || data.imageUrl is string) &&
+             (!('contactPhone' in data) || data.contactPhone is string);
+    }
+
+    function isValidVisitor(data) {
+      return hasRequiredFields(['id', 'churchId', 'name', 'visitDate', 'status', 'createdAt']) &&
+             data.id is string &&
+             data.churchId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.visitDate is timestamp &&
+             data.status in ["new", "followed_up", "member", "inactive"] &&
+             data.createdAt is timestamp &&
+             (!('phone' in data) || data.phone is string) &&
+             (!('email' in data) || data.email is string) &&
+             (!('invitedBy' in data) || data.invitedBy is string) &&
+             (!('notes' in data) || data.notes is string);
+    }
+    
+    function isValidEBDClass(data) {
+      return hasRequiredFields(['id', 'churchId', 'name', 'teacherId', 'teacherName', 'createdAt']) &&
+             data.id is string && data.churchId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.teacherId is string &&
+             data.teacherName is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isChurchAdmin(churchId) {
+      return isAuthenticated() && 
+             (isAdmin() || 
+              (exists(/databases/$(database)/documents/churches/$(churchId)) &&
+               get(/databases/$(database)/documents/churches/$(churchId)).data.ownerId == request.auth.uid) ||
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == churchId &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function isChurchMember(churchId) {
+      return isAuthenticated() && 
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == churchId);
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /churches/{churchId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidChurch(request.resource.data) && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAuthenticated() && isValidChurch(request.resource.data) && request.resource.data.ownerId == resource.data.ownerId && (request.auth.uid == resource.data.ownerId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /ministries/{ministryId} {
+      allow read: if isChurchMember(resource.data.churchId);
+      allow create: if isChurchAdmin(request.resource.data.churchId) && isValidMinistry(request.resource.data);
+      allow update: if (isChurchAdmin(resource.data.churchId) || isOwner(resource.data.leaderId)) && isValidMinistry(request.resource.data);
+      allow delete: if isChurchAdmin(resource.data.churchId);
+    }
+
+    match /cells/{cellId} {
+      allow read: if isChurchMember(resource.data.churchId);
+      allow create: if isChurchAdmin(request.resource.data.churchId) && isValidCell(request.resource.data);
+      allow update: if (isChurchAdmin(resource.data.churchId) || isOwner(resource.data.leaderId)) && isValidCell(request.resource.data);
+      allow delete: if isChurchAdmin(resource.data.churchId);
+    }
+
+    match /events/{eventId} {
+      allow read: if resource.data.isPublic == true || isChurchMember(resource.data.churchId);
+      allow create: if isChurchAdmin(request.resource.data.churchId) && isValidEvent(request.resource.data);
+      allow update: if isChurchAdmin(resource.data.churchId) && isValidEvent(request.resource.data);
+      allow delete: if isChurchAdmin(resource.data.churchId);
+    }
+
+    match /finances/{transactionId} {
+      allow read: if isChurchAdmin(resource.data.churchId);
+      allow create: if isChurchAdmin(request.resource.data.churchId) && isValidFinancialTransaction(request.resource.data);
+      allow update: if isChurchAdmin(resource.data.churchId) && isValidFinancialTransaction(request.resource.data);
+      allow delete: if isChurchAdmin(resource.data.churchId);
+    }
+
+    match /schedules/{scheduleId} {
+      allow read: if isChurchMember(resource.data.churchId);
+      allow create: if isChurchAdmin(request.resource.data.churchId) && isValidSchedule(request.resource.data);
+      allow update: if isChurchAdmin(resource.data.churchId) && isValidSchedule(request.resource.data);
+      allow delete: if isChurchAdmin(resource.data.churchId);
+    }
+
+    match /ebd_classes/{classId} {
+      allow read: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId));
+      allow create: if isAuthenticated() && isValidEBDClass(request.resource.data) && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == request.resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+      allow update: if isAuthenticated() && isValidEBDClass(request.resource.data) && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+      allow delete: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+
+      match /lessons/{lessonId} {
+        allow read: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == get(/databases/$(database)/documents/ebd_classes/$(classId)).data.churchId));
+        allow create, update, delete: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == get(/databases/$(database)/documents/ebd_classes/$(classId)).data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+      }
+    }
+
+    match /ebd_enrollments/{enrollmentId} {
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.studentId || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == get(/databases/$(database)/documents/ebd_classes/$(resource.data.classId)).data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+      allow create: if isAuthenticated() && isValidEBDEnrollment(request.resource.data) && request.auth.uid == request.resource.data.studentId;
+      allow update: if isAuthenticated() && isValidEBDEnrollment(request.resource.data) && (request.auth.uid == resource.data.studentId || isAdmin());
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.studentId || isAdmin());
+
+      match /progress/{progressId} {
+        allow read, write: if isAuthenticated() && (isAdmin() || request.auth.uid == get(/databases/$(database)/documents/ebd_enrollments/$(enrollmentId)).data.studentId);
+      }
+    }
+    
+    match /posts/{postId} {
+      allow read: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId));
+      allow create: if isAuthenticated() && isValidPost(request.resource.data) && request.resource.data.authorId == request.auth.uid && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == request.resource.data.churchId));
+      allow update: if isAuthenticated() && (
+        // Author or Admin can update everything
+        (isValidPost(request.resource.data) && request.resource.data.authorId == resource.data.authorId && request.resource.data.churchId == resource.data.churchId && (request.auth.uid == resource.data.authorId || isAdmin())) ||
+        // Others can only update likesCount or commentsCount
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']) &&
+          request.resource.data.likesCount == resource.data.likesCount + 1
+        ) ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentsCount']) &&
+          (request.resource.data.commentsCount == resource.data.commentsCount + 1 || request.resource.data.commentsCount == resource.data.commentsCount - 1)
+        )
+      );
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || (isAdmin() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId));
+    }
+
+    match /prayer_requests/{requestId} {
+      allow read: if isAuthenticated() && (
+        (resource.data.isPrivate == false && isChurchMember(resource.data.churchId)) ||
+        (resource.data.isPrivate == true && (isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId)))
+      );
+      allow create: if isAuthenticated() && isValidPrayerRequest(request.resource.data) && request.resource.data.authorId == request.auth.uid && isChurchMember(request.resource.data.churchId);
+      allow update: if isAuthenticated() && (
+        (isValidPrayerRequest(request.resource.data) && (isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId))) ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['intercessorsCount']) &&
+          request.resource.data.intercessorsCount == resource.data.intercessorsCount + 1
+        )
+      );
+      allow delete: if isAuthenticated() && (isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId));
+
+      match /intercessions/{intercessionId} {
+        allow read: if isAuthenticated() && (
+          (get(/databases/$(database)/documents/prayer_requests/$(requestId)).data.isPrivate == false && isChurchMember(get(/databases/$(database)/documents/prayer_requests/$(requestId)).data.churchId)) ||
+          (get(/databases/$(database)/documents/prayer_requests/$(requestId)).data.isPrivate == true && (isOwner(get(/databases/$(database)/documents/prayer_requests/$(requestId)).data.authorId) || isChurchAdmin(get(/databases/$(database)/documents/prayer_requests/$(requestId)).data.churchId)))
+        );
+        allow create: if isAuthenticated() && isValidIntercession(request.resource.data) && request.resource.data.intercessorId == request.auth.uid;
+        allow delete: if isAuthenticated() && (isOwner(resource.data.intercessorId) || isChurchAdmin(get(/databases/$(database)/documents/prayer_requests/$(requestId)).data.churchId));
+      }
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated(); // Allow reading other users in the same church (simplified for MVP)
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && uidUnchanged() && ((isOwner(userId) && request.resource.data.role in ['user', 'pastor', 'leader']) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && uidNotModified() && ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
+      allow delete: if isAdmin();
+      
+      match /entries/{entryId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidEntry(request.resource.data) && request.resource.data.userId == userId;
+        allow update: if isOwner(userId) && isValidEntry(request.resource.data) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+      
+      match /stats/{statId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidStats(request.resource.data) && request.resource.data.userId == userId;
+        allow update: if isOwner(userId) && isValidStats(request.resource.data) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidComment(request.resource.data) && request.resource.data.authorId == request.auth.uid;
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || (isAdmin() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == get(/databases/$(database)/documents/posts/$(postId)).data.churchId));
+    }
+
+    match /marketplace_items/{itemId} {
+      allow read: if isAuthenticated() && isChurchMember(resource.data.churchId);
+      allow create: if isAuthenticated() && 
+                    isChurchMember(request.resource.data.churchId) && 
+                    isValidMarketplaceItem(request.resource.data) &&
+                    request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                    (isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId)) &&
+                    isValidMarketplaceItem(request.resource.data) &&
+                    uidNotModified();
+      allow delete: if isAuthenticated() && 
+                    (isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId));
+    }
+
+    match /visitors/{visitorId} {
+      allow read: if isChurchAdmin(resource.data.churchId);
+      allow create: if isChurchAdmin(request.resource.data.churchId) && isValidVisitor(request.resource.data);
+      allow update: if isChurchAdmin(resource.data.churchId) && isValidVisitor(request.resource.data);
+      allow delete: if isChurchAdmin(resource.data.churchId);
+    }
+  }
+}
