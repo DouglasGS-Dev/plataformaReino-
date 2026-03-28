@@ -9,6 +9,7 @@ import {
   Clock, 
   LayoutDashboard, 
   Heart, 
+  DollarSign,
   PenTool, 
   BookOpen, 
   Sparkles,
@@ -31,8 +32,8 @@ export default function AppMore() {
     {
       title: 'Comunidade',
       items: [
-        { path: '/app/social', icon: Users, label: 'Rede Social', color: 'bg-blue-100 text-blue-600' },
-        { path: '/app/ministries', icon: Users, label: 'Ministérios', color: 'bg-indigo-100 text-indigo-600' },
+        { path: '/app/social', icon: Users, label: 'Rede Social', color: 'bg-primary/10 text-primary' },
+        { path: '/app/ministries', icon: Users, label: 'Ministérios', color: 'bg-primary/20 text-primary' },
         { path: '/app/cells', icon: Network, label: 'Células', color: 'bg-emerald-100 text-emerald-600' },
         { path: '/app/events', icon: Calendar, label: 'Eventos', color: 'bg-rose-100 text-rose-600' },
         { path: '/app/marketplace', icon: ShoppingBag, label: 'Marketplace', color: 'bg-amber-100 text-amber-600' },
@@ -43,6 +44,7 @@ export default function AppMore() {
       items: [
         { path: '/app/ebd', icon: Book, label: 'Escola Bíblica (EBD)', color: 'bg-violet-100 text-violet-600' },
         { path: '/app/prayers', icon: Heart, label: 'Pedidos de Oração', color: 'bg-rose-100 text-rose-600' },
+        { path: '/app/giving', icon: DollarSign, label: 'Contribuições', color: 'bg-emerald-100 text-emerald-600' },
         { path: '/app/diary', icon: PenTool, label: 'Diário Espiritual', color: 'bg-sky-100 text-sky-600' },
         { path: '/app/devotional', icon: BookOpen, label: 'Devocional Diário', color: 'bg-orange-100 text-orange-600' },
         { path: '/app/mentor', icon: Sparkles, label: 'Mentor IA', color: 'bg-purple-100 text-purple-600' },
@@ -71,7 +73,7 @@ export default function AppMore() {
     <div className="p-4 pb-24 max-w-2xl mx-auto">
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Mais Opções</h1>
-        <p className="text-slate-500 text-sm">Explore todos os recursos da ChurchOS</p>
+        <p className="text-slate-500 text-sm">Explore todos os recursos do REINO</p>
       </header>
 
       <div className="space-y-8">
@@ -151,7 +153,7 @@ export default function AppMore() {
 
         <div className="text-center py-4">
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-            ChurchOS v1.0.0 • Feito com ❤️ para o Reino
+            REINO v1.0.0 • Feito com ❤️ para o Reino
           </p>
         </div>
       </div>

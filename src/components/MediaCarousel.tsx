@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { PostMedia } from '../types';
@@ -24,20 +24,76 @@ export const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, aspectRatio
     setCurrentIndex((prev) => (prev - 1 + media.length) % media.length);
   };
 
+  const getAspectRatioClass = (ratio: string) => {
+    switch (ratio) {
+      case '1:1': return 'aspect-square';
+      case '16:9': return 'aspect-video';
+      case '4:5': return 'aspect-[4/5]';
+      case '9:16': return 'aspect-[9/16]';
+      default: return 'aspect-video';
+    }
+  };
+
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            videoRef.current?.play().catch(e => console.error("Play failed:", e));
+          } else {
+            videoRef.current?.pause();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (videoRef.current) {
+      observer.observe(videoRef.current);
+    }
+
+    return () => {
+      if (videoRef.current) {
+        observer.unobserve(videoRef.current);
+      }
+    };
+  }, [currentIndex]);
+
   return (
     <div 
-      className={`relative group overflow-hidden rounded-xl bg-slate-100 aspect-${aspectRatio}`}
+      className={`relative group overflow-hidden rounded-xl bg-slate-900 ${getAspectRatioClass(aspectRatio)}`}
       onClick={() => onExpand?.(currentIndex)}
     >
-      <motion.img
-        key={currentIndex}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        src={media[currentIndex].url}
-        alt={`Media ${currentIndex + 1}`}
-        className="w-full h-full object-cover cursor-pointer"
-        referrerPolicy="no-referrer"
-      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentIndex}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="w-full h-full"
+        >
+          {media[currentIndex].type === 'image' ? (
+            <img
+              src={media[currentIndex].url}
+              alt={`Media ${currentIndex + 1}`}
+              className={`w-full h-full ${media[currentIndex].objectFit === 'contain' ? 'object-contain' : 'object-cover'} cursor-pointer`}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              src={media[currentIndex].url}
+              className={`w-full h-full ${media[currentIndex].objectFit === 'contain' ? 'object-contain' : 'object-cover'} cursor-pointer`}
+              muted
+              playsInline
+              loop
+              controls
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
       
       {media.length > 1 && (
         <>
@@ -58,7 +114,7 @@ export const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, aspectRatio
               <div
                 key={i}
                 className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  i === currentIndex ? 'bg-indigo-600 w-3' : 'bg-slate-300'
+                  i === currentIndex ? 'bg-primary w-3' : 'bg-slate-300'
                 }`}
               />
             ))}

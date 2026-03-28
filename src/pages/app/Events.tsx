@@ -58,7 +58,7 @@ export default function Events() {
       <div className="space-y-6 pb-20">
         <button 
           onClick={() => setSelectedEvent(null)}
-          className="flex items-center text-indigo-600 font-medium"
+          className="flex items-center text-primary font-medium"
         >
           <ChevronRight className="rotate-180 mr-1" size={20} />
           Voltar para Eventos
@@ -66,12 +66,12 @@ export default function Events() {
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="h-56 bg-slate-100 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-violet-500/20" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-violet-500/20" />
             <div className="absolute inset-0 flex items-center justify-center text-slate-300">
               <Calendar size={64} />
             </div>
             <div className="absolute top-6 left-6">
-              <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-xs font-bold uppercase tracking-wider text-indigo-600 shadow-sm">
+              <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-xs font-bold uppercase tracking-wider text-primary shadow-sm">
                 {selectedEvent.category}
               </span>
             </div>
@@ -82,11 +82,11 @@ export default function Events() {
               <h2 className="text-3xl font-bold text-slate-900 leading-tight">{selectedEvent.title}</h2>
               <div className="flex flex-wrap gap-4 mt-4">
                 <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                  <Calendar size={18} className="text-indigo-500" />
+                  <Calendar size={18} className="text-primary" />
                   <span className="text-sm font-medium">{new Date(selectedEvent.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}</span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                  <Clock size={18} className="text-indigo-500" />
+                  <Clock size={18} className="text-primary" />
                   <span className="text-sm font-medium">{selectedEvent.time}</span>
                 </div>
               </div>
@@ -115,7 +115,7 @@ export default function Events() {
             </div>
 
             <div className="pt-4 flex gap-3">
-              <button className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2">
+              <button className="flex-1 py-4 primary-gradient text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
                 <Ticket size={20} />
                 Garantir Inscrição
               </button>
@@ -136,7 +136,7 @@ export default function Events() {
           <h2 className="text-3xl font-bold text-slate-900">Eventos</h2>
           <p className="text-slate-500 mt-1">Fique por dentro do que acontece na igreja.</p>
         </div>
-        <div className="w-12 h-12 bg-white rounded-2xl border border-slate-200 flex items-center justify-center text-indigo-600 shadow-sm">
+        <div className="w-12 h-12 bg-white rounded-2xl border border-slate-200 flex items-center justify-center text-primary shadow-sm">
           <Calendar size={24} />
         </div>
       </header>
@@ -149,7 +149,7 @@ export default function Events() {
             placeholder="Buscar eventos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm transition-all"
+            className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none shadow-sm transition-all"
           />
         </div>
 
@@ -160,8 +160,8 @@ export default function Events() {
               onClick={() => setActiveCategory(cat)}
               className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
                 activeCategory === cat 
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' 
-                : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300'
+                ? 'bg-primary text-white shadow-md shadow-primary/20' 
+                : 'bg-white text-slate-500 border border-slate-200 hover:border-primary/30'
               }`}
             >
               {cat}
@@ -184,15 +184,15 @@ export default function Events() {
               transition={{ delay: index * 0.05 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setSelectedEvent(event)}
-              className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row cursor-pointer hover:border-indigo-300 transition-all group"
+              className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row cursor-pointer hover:border-primary/30 transition-all group"
             >
               <div className="sm:w-40 h-40 sm:h-auto bg-slate-50 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-violet-500/10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-violet-500/10" />
                 <div className="absolute inset-0 flex items-center justify-center text-slate-200">
                   <Calendar size={40} />
                 </div>
                 <div className="absolute top-3 left-3">
-                  <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-indigo-600 uppercase tracking-wider shadow-sm">
+                  <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-primary uppercase tracking-wider shadow-sm">
                     {event.category}
                   </div>
                 </div>
@@ -200,20 +200,20 @@ export default function Events() {
               
               <div className="flex-1 p-5 flex flex-col justify-between">
                 <div>
-                  <h4 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight mb-2">
+                  <h4 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors leading-tight mb-2">
                     {event.title}
                   </h4>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <Calendar size={14} className="text-indigo-400" />
+                      <Calendar size={14} className="text-primary/60" />
                       {new Date(event.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <Clock size={14} className="text-indigo-400" />
+                      <Clock size={14} className="text-primary/60" />
                       {event.time}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <MapPin size={14} className="text-indigo-400" />
+                      <MapPin size={14} className="text-primary/60" />
                       <span className="truncate">{event.location}</span>
                     </div>
                   </div>
@@ -224,7 +224,7 @@ export default function Events() {
                     <Users size={12} />
                     Inscrições Abertas
                   </div>
-                  <ChevronRight size={18} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                  <ChevronRight size={18} className="text-slate-300 group-hover:text-primary transition-colors" />
                 </div>
               </div>
             </motion.div>

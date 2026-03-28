@@ -38,25 +38,25 @@ export default function EnvironmentSwitcher({ userProfile }: EnvironmentSwitcher
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
             className="absolute top-full right-0 mt-2 w-72 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-[110]"
           >
-            <div className="p-5 bg-indigo-600 text-white">
+            <div className="p-5 primary-gradient text-white">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-white/20 rounded-xl">
                   <ArrowLeftRight size={20} />
                 </div>
                 <h3 className="font-bold">Alternar Ambiente</h3>
               </div>
-              <p className="text-xs text-indigo-100">Mude rapidamente entre a visão de membro e o painel de gestão.</p>
+              <p className="text-xs text-white/80">Mude rapidamente entre a visão de membro e o painel de gestão.</p>
             </div>
 
             <div className="p-4 space-y-2">
               <button
                 onClick={() => { navigate('/app'); setIsOpen(false); }}
                 className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all group ${
-                  isApp ? 'bg-indigo-50 border-2 border-indigo-200' : 'hover:bg-slate-50 border-2 border-transparent'
+                  isApp ? 'bg-primary/10 border-2 border-primary/20' : 'hover:bg-slate-50 border-2 border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${isApp ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <div className={`p-2 rounded-xl ${isApp ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
                     <Users size={18} />
                   </div>
                   <div className="text-left">
@@ -64,17 +64,17 @@ export default function EnvironmentSwitcher({ userProfile }: EnvironmentSwitcher
                     <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">App do Membro</p>
                   </div>
                 </div>
-                {isApp && <div className="w-2 h-2 bg-indigo-600 rounded-full" />}
+                {isApp && <div className="w-2 h-2 bg-primary rounded-full" />}
               </button>
 
               <button
                 onClick={() => { navigate('/church-admin'); setIsOpen(false); }}
                 className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all group ${
-                  isAdmin ? 'bg-indigo-50 border-2 border-indigo-200' : 'hover:bg-slate-50 border-2 border-transparent'
+                  isAdmin ? 'bg-primary/10 border-2 border-primary/20' : 'hover:bg-slate-50 border-2 border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${isAdmin ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <div className={`p-2 rounded-xl ${isAdmin ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
                     <LayoutDashboard size={18} />
                   </div>
                   <div className="text-left">
@@ -82,7 +82,7 @@ export default function EnvironmentSwitcher({ userProfile }: EnvironmentSwitcher
                     <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Gestão da Igreja</p>
                   </div>
                 </div>
-                {isAdmin && <div className="w-2 h-2 bg-indigo-600 rounded-full" />}
+                {isAdmin && <div className="w-2 h-2 bg-primary rounded-full" />}
               </button>
             </div>
 
@@ -98,7 +98,7 @@ export default function EnvironmentSwitcher({ userProfile }: EnvironmentSwitcher
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all transform hover:scale-105 active:scale-95 ${
-          isOpen ? 'bg-slate-900 text-white' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+          isOpen ? 'bg-slate-900 text-white' : 'bg-primary/10 text-primary border border-primary/20'
         }`}
       >
         <AnimatePresence mode="wait">

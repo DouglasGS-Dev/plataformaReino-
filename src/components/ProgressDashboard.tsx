@@ -14,7 +14,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ entries }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+            <div className="p-2 bg-primary/10 text-primary rounded-lg">
               <Calendar size={20} />
             </div>
             <span className="text-xs font-medium text-slate-400">Total</span>
@@ -69,7 +69,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ entries }) => {
                 <h4 className="font-semibold text-slate-800">Novo registro no diário</h4>
                 <p className="text-sm text-slate-500">Há {i * 2} horas atrás</p>
               </div>
-              <div className="text-xs font-medium px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md">
+              <div className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary rounded-md">
                 Espiritual
               </div>
             </div>

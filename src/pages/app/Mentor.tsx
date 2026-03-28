@@ -164,13 +164,13 @@ export default function MentorPage() {
 
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+          <div className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
             <Bot size={24} />
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900">Mentor Espiritual</h2>
             <p className="text-xs text-slate-500 flex items-center gap-1">
-              <Sparkles size={12} className="text-indigo-500" /> IA baseada em princípios bíblicos
+              <Sparkles size={12} className="text-primary" /> IA baseada em princípios bíblicos
             </p>
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function MentorPage() {
           >
             <div className={`flex gap-3 max-w-[85%] ${msg.role === 'bot' ? 'flex-row' : 'flex-row-reverse'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
-                msg.role === 'bot' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'
+                msg.role === 'bot' ? 'bg-primary-100 text-primary' : 'bg-slate-100 text-slate-600'
               }`}>
                 {msg.role === 'bot' ? <Bot size={16} /> : <UserIcon size={16} />}
               </div>
@@ -205,7 +205,7 @@ export default function MentorPage() {
                 <div className={`p-4 rounded-2xl relative group ${
                   msg.role === 'bot' 
                     ? 'bg-slate-50 text-slate-800 rounded-tl-none border border-slate-100' 
-                    : 'bg-indigo-600 text-white rounded-tr-none shadow-md shadow-indigo-100'
+                    : 'bg-primary text-white rounded-tr-none shadow-md shadow-primary/20'
                 }`}>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                   
@@ -213,11 +213,11 @@ export default function MentorPage() {
                     <button
                       onClick={() => handleSaveToDiary(msg.text, i)}
                       disabled={isSaving === i}
-                      className="absolute -right-10 top-0 p-2 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                      className="absolute -right-10 top-0 p-2 text-slate-300 hover:text-primary opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
                       title="Salvar no Diário"
                     >
                       {isSaving === i ? (
-                        <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <Star size={16} />
                       )}
@@ -234,13 +234,13 @@ export default function MentorPage() {
         {isTyping && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
             <div className="flex gap-3 max-w-[85%]">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full bg-primary-100 text-primary flex items-center justify-center shrink-0">
                 <Bot size={16} />
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl rounded-tl-none border border-slate-100 flex gap-1">
-                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                <span className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
               </div>
             </div>
           </motion.div>
@@ -255,12 +255,12 @@ export default function MentorPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="O que está em seu coração hoje?"
-            className="flex-1 pl-4 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+            className="flex-1 pl-4 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-primary outline-none transition-all text-sm"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isTyping}
-            className="p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-4 bg-primary text-white rounded-2xl hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send size={20} />
           </button>

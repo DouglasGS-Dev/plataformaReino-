@@ -15,9 +15,9 @@ import { MediaCarousel } from '../../components/MediaCarousel';
 
 const categoryOptions = [
   { id: 'Milagres', icon: Sparkles, color: 'text-amber-500', bg: 'bg-amber-50' },
-  { id: 'Livramentos', icon: Shield, color: 'text-blue-500', bg: 'bg-blue-50' },
+  { id: 'Livramentos', icon: Shield, color: 'text-primary', bg: 'bg-primary/10' },
   { id: 'Desafios', icon: Mountain, color: 'text-slate-500', bg: 'bg-slate-50' },
-  { id: 'Propósitos', icon: Target, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+  { id: 'Propósitos', icon: Target, color: 'text-primary', bg: 'bg-primary-50' },
   { id: 'Pedidos de oração', icon: HandHeart, color: 'text-rose-500', bg: 'bg-rose-50' },
   { id: 'Orações respondidas', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
   { id: 'Lições espirituais', icon: Lightbulb, color: 'text-yellow-500', bg: 'bg-yellow-50' },
@@ -69,7 +69,7 @@ export default function TimelinePage() {
     if (!desc) return null;
     return desc.split('\n').map((line, i) => {
       if (line.startsWith('**') && line.endsWith('**')) {
-        return <strong key={i} className="block mt-4 mb-2 text-indigo-700 text-xs uppercase tracking-wider font-bold">{line.slice(2, -2)}</strong>;
+        return <strong key={i} className="block mt-4 mb-2 text-primary-700 text-xs uppercase tracking-wider font-bold">{line.slice(2, -2)}</strong>;
       }
       return <span key={i} className="block text-slate-600 mb-1 leading-relaxed">{line}</span>;
     });
@@ -78,7 +78,7 @@ export default function TimelinePage() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
-        <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mb-6">
+        <div className="w-20 h-20 bg-primary-50 text-primary rounded-full flex items-center justify-center mb-6">
           <Clock size={40} />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Sua Linha do Tempo</h2>
@@ -99,7 +99,7 @@ export default function TimelinePage() {
         <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-sm self-start">
           <button 
             onClick={() => setFilter('Todas')}
-            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'Todas' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'Todas' ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
           >
             Tudo
           </button>
@@ -119,7 +119,7 @@ export default function TimelinePage() {
           placeholder="Buscar no histórico..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm"
+          className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-white focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm"
         />
       </div>
 
@@ -147,7 +147,7 @@ export default function TimelinePage() {
                 transition={{ delay: index * 0.05 }}
                 className="relative pl-16 group"
               >
-                <div className={`absolute left-[18px] top-6 w-4 h-4 rounded-full z-10 border-4 border-slate-50 ${entry.isMemorial ? 'bg-amber-400' : 'bg-indigo-500'} shadow-sm group-hover:scale-125 transition-transform`} />
+                <div className={`absolute left-[18px] top-6 w-4 h-4 rounded-full z-10 border-4 border-slate-50 ${entry.isMemorial ? 'bg-amber-400' : 'bg-primary'} shadow-sm group-hover:scale-125 transition-transform`} />
                 
                 <div className={`bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all ${entry.isMemorial ? 'ring-2 ring-amber-100' : ''}`}>
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -184,9 +184,9 @@ export default function TimelinePage() {
                     )}
 
                     {entry.bibleVerse && (
-                      <div className="mt-6 p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-start gap-3">
-                        <Book size={18} className="text-indigo-600 shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium text-indigo-900 italic">"{entry.bibleVerse}"</p>
+                      <div className="mt-6 p-4 bg-primary-50 rounded-2xl border border-primary-100 flex items-start gap-3">
+                        <Book size={18} className="text-primary shrink-0 mt-0.5" />
+                        <p className="text-sm font-medium text-primary-900 italic">"{entry.bibleVerse}"</p>
                       </div>
                     )}
                   </div>

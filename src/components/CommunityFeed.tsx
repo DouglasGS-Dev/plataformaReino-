@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageCircle, Heart, Share2, Send, User, Sparkles, Shield, Megaphone, PenTool, Trash2, Image as ImageIcon, Video, X, ChevronLeft, ChevronRight, Maximize2, BookOpen, Play, Pause, Volume2, VolumeX, Clock, Crop, Scissors, Check, CheckCircle2, Layout } from 'lucide-react';
-import { db, auth, handleFirestoreError, OperationType } from '../firebase';
+import { db, auth, storage, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Post, PostMedia, Comment } from '../types';
 import { compressImage, formatFileSize } from '../utils/media';
 import { MediaCarousel } from './MediaCarousel';
@@ -42,7 +43,7 @@ const PostComments = ({ postId, userRole, onDeleteComment }: { postId: string, u
   if (loading) {
     return (
       <div className="flex justify-center py-4">
-        <div className="w-5 h-5 border-2 border-[var(--color-primary-500)] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -72,7 +73,7 @@ const PostComments = ({ postId, userRole, onDeleteComment }: { postId: string, u
                   {comment.authorRole && (comment.authorRole === 'pastor' || comment.authorRole === 'admin' || comment.authorRole === 'leader') && (
                     <span className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-md border ${
                       comment.authorRole === 'pastor' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                      comment.authorRole === 'admin' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                      comment.authorRole === 'admin' ? 'bg-primary-50 text-primary border-primary-200' :
                       'bg-emerald-50 text-emerald-700 border-emerald-200'
                     }`}>
                       {comment.authorRole === 'pastor' ? 'Pastor' : 
@@ -269,7 +270,7 @@ const CustomAudioPlayer = ({
           
           <div className="relative h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1.5">
             <div 
-              className="absolute top-0 left-0 h-full bg-blue-500 rounded-full transition-all duration-100 ease-linear"
+              className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-100 ease-linear"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -292,6 +293,8 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   const [commentingOn, setCommentingOn] = useState<string | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [showRecoveryToast, setShowRecoveryToast] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
   const showSuccess = (message: string) => {
@@ -403,6 +406,20 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   const handleDelete = async () => {
     if (!postToDelete) return;
     try {
+      const post = posts.find(p => p.id === postToDelete);
+      if (post?.media) {
+        for (const media of post.media) {
+          if (media.id) {
+            const storagePath = `churches/${churchId}/posts/${media.id}`;
+            const storageRef = ref(storage, storagePath);
+            try {
+              await deleteObject(storageRef);
+            } catch (err) {
+              console.error('Error deleting file from storage:', err);
+            }
+          }
+        }
+      }
       await deleteDoc(doc(db, 'posts', postToDelete));
       setPostToDelete(null);
       showToast('Publicação excluída com sucesso!');
@@ -414,38 +431,114 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || !auth.currentUser) return;
     setMediaError(null);
+    setIsCompressing(true);
 
-    const MAX_TOTAL_SIZE = 800 * 1024; // 800KB total limit for base64 safety
-    let currentTotalSize = selectedMedia.reduce((acc, m) => acc + m.url.length, 0);
-
-    for (const file of Array.from(files) as File[]) {
-      if (file.size > 2 * 1024 * 1024 && file.type.startsWith('video')) {
-        setMediaError(`O vídeo "${file.name}" é muito grande. O limite para vídeos é de 2MB.`);
-        continue;
+    try {
+      console.log('handleFileSelect started', { churchId, filesCount: files.length });
+      if (!churchId) {
+        throw new Error('ID da igreja não encontrado. Por favor, recarregue a página.');
       }
 
-      const reader = new FileReader();
-      const fileData = await new Promise<string>((resolve) => {
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
+      const uploadPromises = Array.from(files).map(async (file) => {
+        console.log('Processing file:', file.name, file.size, file.type);
+        
+        // Limit to 100MB
+        if (file.size > 100 * 1024 * 1024) {
+          setMediaError(`O arquivo "${file.name}" é muito grande. O limite é de 100MB.`);
+          return;
+        }
+
+        const type = file.type.startsWith('video') ? 'video' : 'image';
+        const fileId = `media_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        const storagePath = `churches/${churchId}/posts/${fileId}`;
+        const storageRef = ref(storage, storagePath);
+
+        let fileToUpload: File | Blob = file;
+        
+        if (type === 'image') {
+          try {
+            const reader = new FileReader();
+            const base64Str = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            
+            const compressedBase64 = await compressImage(base64Str);
+            
+            // Convert base64 back to Blob
+            const byteString = atob(compressedBase64.split(',')[1]);
+            const mimeString = compressedBase64.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            fileToUpload = new Blob([ab], { type: mimeString });
+            console.log(`Compressed ${file.name} from ${file.size} to ${fileToUpload.size}`);
+          } catch (err) {
+            console.error('Error compressing image:', err);
+            // Fallback to original file
+          }
+        }
+
+        console.log('Starting upload to:', storagePath);
+
+        try {
+          // Set initial progress
+          setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+          
+          const snapshot = await new Promise<any>(async (resolve, reject) => {
+            // 5 minute timeout
+            const timeoutId = setTimeout(() => {
+              reject(new Error('Tempo limite de envio excedido. Verifique sua conexão.'));
+            }, 300000);
+
+            try {
+              const result = await uploadBytes(storageRef, fileToUpload);
+              clearTimeout(timeoutId);
+              resolve(result);
+            } catch (error) {
+              clearTimeout(timeoutId);
+              reject(error);
+            }
+          });
+          
+          // Set progress to 100% when done
+          setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
+          
+          const downloadUrl = await getDownloadURL(snapshot.ref);
+          console.log('Download URL obtained:', downloadUrl);
+          
+          setSelectedMedia(prev => [...prev, { 
+            url: downloadUrl, 
+            type: type as any, 
+            objectFit: 'cover',
+            id: fileId,
+            name: file.name,
+            size: fileToUpload.size
+          }]);
+        } catch (uploadError: any) {
+          console.error('Caught upload error:', uploadError);
+          setMediaError(`Erro ao enviar "${file.name}": ${uploadError.message || 'Erro desconhecido'}`);
+        } finally {
+          setUploadProgress(prev => {
+            const next = { ...prev };
+            delete next[fileId];
+            return next;
+          });
+        }
       });
 
-      let processedUrl = fileData;
-      const type = file.type.startsWith('video') ? 'video' : 'image';
-
-      if (type === 'image') {
-        processedUrl = await compressImage(fileData);
-      }
-
-      if (currentTotalSize + processedUrl.length > MAX_TOTAL_SIZE) {
-        setMediaError('Limite de tamanho atingido para esta publicação. Tente remover algumas mídias ou usar arquivos menores.');
-        break;
-      }
-
-      currentTotalSize += processedUrl.length;
-      setSelectedMedia(prev => [...prev, { url: processedUrl, type: type as any }]);
+      await Promise.all(uploadPromises);
+    } catch (err: any) {
+      console.error('Global error in handleFileSelect:', err);
+      setMediaError(err.message || 'Erro ao processar mídia. Tente novamente.');
+    } finally {
+      console.log('handleFileSelect finished');
+      setIsCompressing(false);
     }
   };
 
@@ -551,7 +644,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   const getTypeConfig = (type: string) => {
     switch (type) {
       case 'prayer':
-        return { icon: Shield, label: 'Pedido de Oração', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' };
+        return { icon: Shield, label: 'Pedido de Oração', color: 'text-primary', bg: 'bg-primary-50', border: 'border-primary-200' };
       case 'testimony':
         return { icon: Sparkles, label: 'Testemunho', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
       case 'announcement':
@@ -616,19 +709,19 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`glass-card p-5 md:p-6 rounded-3xl bg-white shadow-sm border transition-all ${editingPost ? 'border-[var(--color-primary-400)] ring-2 ring-[var(--color-primary-50)]' : 'border-[var(--color-border)]'}`}
+        className={`glass-card p-5 md:p-6 rounded-3xl bg-white shadow-sm border transition-all ${editingPost ? 'border-primary ring-2 ring-primary-50' : 'border-[var(--color-border)]'}`}
       >
         {editingPost && (
-          <div className="flex items-center gap-2 mb-4 text-[var(--color-primary-600)] font-semibold text-sm bg-[var(--color-primary-50)] px-3 py-1.5 rounded-full w-fit">
+          <div className="flex items-center gap-2 mb-4 text-primary font-semibold text-sm bg-primary-50 px-3 py-1.5 rounded-full w-fit">
             <PenTool size={14} /> Editando sua publicação
           </div>
         )}
         <div className="flex gap-4 mb-4">
-          <div className="w-12 h-12 rounded-full bg-[var(--color-primary-50)] flex items-center justify-center overflow-hidden shrink-0 border-2 border-white shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center overflow-hidden shrink-0 border-2 border-white shadow-sm">
             {auth.currentUser?.photoURL ? (
               <img src={auth.currentUser.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <User className="text-[var(--color-primary-600)]" size={24} />
+              <User className="text-primary" size={24} />
             )}
           </div>
           <div className="flex-1">
@@ -691,33 +784,97 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                             className="hidden" 
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
-                              if (file) {
+                              if (file && auth.currentUser) {
                                 setMediaError(null);
-                                if (file.size > 2 * 1024 * 1024 && file.type.startsWith('video')) {
-                                  setMediaError(`O vídeo "${file.name}" é muito grande. O limite para vídeos é de 2MB.`);
-                                  return;
-                                }
-                                const reader = new FileReader();
-                                const fileData = await new Promise<string>((resolve) => {
-                                  reader.onloadend = () => resolve(reader.result as string);
-                                  reader.readAsDataURL(file);
-                                });
-                                
-                                let processedUrl = fileData;
-                                const type = file.type.startsWith('video') ? 'video' : 'image';
-                                if (type === 'image') {
-                                  processedUrl = await compressImage(fileData);
-                                }
+                                setIsCompressing(true);
+                                try {
+                                  if (!churchId) {
+                                    throw new Error('ID da igreja não encontrado.');
+                                  }
 
-                                const otherMediaSize = selectedMedia.filter((_, i) => i !== index).reduce((acc, m) => acc + m.url.length, 0);
-                                if (otherMediaSize + processedUrl.length > 800 * 1024) {
-                                  setMediaError('Limite de tamanho atingido. Tente usar um arquivo menor.');
-                                  return;
-                                }
+                                  if (file.size > 100 * 1024 * 1024) {
+                                    setMediaError(`O arquivo "${file.name}" é muito grande. O limite é de 100MB.`);
+                                    return;
+                                  }
 
-                                const newMedia = [...selectedMedia];
-                                newMedia[index] = { url: processedUrl, type: type as any };
-                                setSelectedMedia(newMedia);
+                                  const type = file.type.startsWith('video') ? 'video' : 'image';
+                                  const fileId = `media_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+                                  const storagePath = `churches/${churchId}/posts/${fileId}`;
+                                  const storageRef = ref(storage, storagePath);
+
+                                  let fileToUpload: File | Blob = file;
+                                  
+                                  if (type === 'image') {
+                                    try {
+                                      const reader = new FileReader();
+                                      const base64Str = await new Promise<string>((resolve, reject) => {
+                                        reader.onload = () => resolve(reader.result as string);
+                                        reader.onerror = reject;
+                                        reader.readAsDataURL(file);
+                                      });
+                                      
+                                      const compressedBase64 = await compressImage(base64Str);
+                                      
+                                      const byteString = atob(compressedBase64.split(',')[1]);
+                                      const mimeString = compressedBase64.split(',')[0].split(':')[1].split(';')[0];
+                                      const ab = new ArrayBuffer(byteString.length);
+                                      const ia = new Uint8Array(ab);
+                                      for (let i = 0; i < byteString.length; i++) {
+                                        ia[i] = byteString.charCodeAt(i);
+                                      }
+                                      fileToUpload = new Blob([ab], { type: mimeString });
+                                    } catch (err) {
+                                      console.error('Error compressing image:', err);
+                                    }
+                                  }
+
+                                  setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+                                  
+                                  try {
+                                    const snapshot = await new Promise<any>(async (resolve, reject) => {
+                                      const timeoutId = setTimeout(() => {
+                                        reject(new Error('Tempo limite de envio excedido. Verifique sua conexão.'));
+                                      }, 300000);
+
+                                      try {
+                                        const result = await uploadBytes(storageRef, fileToUpload);
+                                        clearTimeout(timeoutId);
+                                        resolve(result);
+                                      } catch (error) {
+                                        clearTimeout(timeoutId);
+                                        reject(error);
+                                      }
+                                    });
+
+                                    setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
+                                    
+                                    const downloadUrl = await getDownloadURL(snapshot.ref);
+                                    const newMedia = [...selectedMedia];
+                                    newMedia[index] = { 
+                                      url: downloadUrl, 
+                                      type: type as any, 
+                                      objectFit: 'cover',
+                                      id: fileId,
+                                      name: file.name,
+                                      size: fileToUpload.size
+                                    };
+                                    setSelectedMedia(newMedia);
+                                  } catch (err) {
+                                    console.error('Replace upload error:', err);
+                                    throw err;
+                                  }
+
+                                  setUploadProgress(prev => {
+                                    const next = { ...prev };
+                                    delete next[fileId];
+                                    return next;
+                                  });
+                                } catch (err: any) {
+                                  console.error('Error replacing media:', err);
+                                  setMediaError(err.message || 'Erro ao substituir mídia.');
+                                } finally {
+                                  setIsCompressing(false);
+                                }
                               }
                             }} 
                           />
@@ -738,11 +895,45 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                     </div>
                   </motion.div>
                 ))}
-                <label className="relative aspect-square rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)] transition-all cursor-pointer">
+                <label className="relative aspect-square rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-primary-200 hover:text-primary hover:bg-primary-50 transition-all cursor-pointer">
                   <ImageIcon size={24} />
                   <span className="text-[10px] font-bold uppercase tracking-wider">Adicionar</span>
                   <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileSelect} />
                 </label>
+              </div>
+            )}
+
+            {Object.keys(uploadProgress).length > 0 && (
+              <div className="space-y-2 mb-4">
+                {Object.entries(uploadProgress).map(([id, progress]) => (
+                  <div key={id} className="bg-primary-50 p-3 rounded-2xl border border-primary-100">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Enviando mídia...</span>
+                      <span className="text-[10px] font-bold text-primary animate-pulse">Aguarde</span>
+                    </div>
+                    <div className="h-1.5 bg-primary-100 rounded-full overflow-hidden relative">
+                      <motion.div 
+                        className="absolute top-0 bottom-0 left-0 bg-primary rounded-full"
+                        animate={{ 
+                          left: ["-100%", "100%"],
+                          width: ["50%", "50%"]
+                        }}
+                        transition={{ 
+                          repeat: Infinity, 
+                          duration: 1.5,
+                          ease: "linear"
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {isCompressing && Object.keys(uploadProgress).length === 0 && (
+              <div className="flex items-center gap-2 mb-4 p-3 bg-primary-50 text-primary rounded-2xl border border-primary-100 animate-pulse">
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs font-bold uppercase tracking-wider">Otimizando mídia...</span>
               </div>
             )}
 
@@ -755,7 +946,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                     onClick={() => setAspectRatio(ratio)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       aspectRatio === ratio 
-                        ? 'bg-[var(--color-primary-500)] text-white shadow-sm' 
+                        ? 'primary-gradient text-white shadow-sm' 
                         : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                     }`}
                   >
@@ -898,7 +1089,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                                 setAspectRatio(post.aspectRatio || '16:9');
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
-                              className="p-1.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] rounded-lg transition-colors"
+                              className="p-1.5 text-[var(--color-text-tertiary)] hover:text-primary hover:bg-primary-50 rounded-lg transition-colors"
                               title="Editar post"
                             >
                               <PenTool size={16} />
@@ -921,8 +1112,8 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                   </p>
 
                   {post.bibleVerse && (
-                    <div className="mb-4 p-3 bg-slate-50 rounded-2xl border-l-4 border-[var(--color-primary-500)] italic text-sm text-[var(--color-text-secondary)] flex items-start gap-3">
-                      <BookOpen size={16} className="text-[var(--color-primary-500)] shrink-0 mt-0.5" />
+                    <div className="mb-4 p-3 bg-slate-50 rounded-2xl border-l-4 border-primary italic text-sm text-[var(--color-text-secondary)] flex items-start gap-3">
+                      <BookOpen size={16} className="text-primary shrink-0 mt-0.5" />
                       <div>{post.bibleVerse}</div>
                     </div>
                   )}
@@ -955,10 +1146,10 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                     <button 
                       onClick={() => setCommentingOn(commentingOn === post.id ? null : post.id)}
                       className={`flex items-center gap-2 transition-colors font-medium text-sm ${
-                        commentingOn === post.id ? 'text-blue-500' : 'text-[var(--color-text-tertiary)] hover:text-blue-500'
+                        commentingOn === post.id ? 'text-primary' : 'text-[var(--color-text-tertiary)] hover:text-primary'
                       }`}
                     >
-                      <MessageCircle size={18} className={commentingOn === post.id ? "fill-blue-100" : ""} /> 
+                      <MessageCircle size={18} className={commentingOn === post.id ? "fill-primary-100" : ""} /> 
                       <span>{post.commentsCount || 0} Comentar</span>
                     </button>
 
@@ -1012,7 +1203,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                                 <User className="text-[var(--color-text-tertiary)]" size={16} />
                               )}
                             </div>
-                            <div className="flex-1 flex items-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full px-4 py-1 focus-within:ring-2 focus-within:ring-[var(--color-primary-500)] focus-within:border-transparent transition-all shadow-inner">
+                            <div className="flex-1 flex items-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full px-4 py-1 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all shadow-inner">
                               <input
                                 type="text"
                                 placeholder="Escreva um comentário..."
@@ -1027,7 +1218,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                                 }}
                               />
                               <button 
-                                className="text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)] disabled:opacity-50 p-1 transition-colors"
+                                className="text-primary hover:text-primary/80 disabled:opacity-50 p-1 transition-colors"
                                 disabled={!newComment.trim() || isSubmittingComment}
                                 onClick={() => handleAddComment(post.id)}
                               >
@@ -1056,7 +1247,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
             className="text-center py-16 text-[var(--color-text-tertiary)] font-medium bg-white/50 rounded-3xl border border-dashed border-[var(--color-border)]"
           >
             <div className="w-16 h-16 bg-[var(--color-surface)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border)]">
-              <MessageCircle size={24} className="text-[var(--color-primary-400)]" />
+              <MessageCircle size={24} className="text-primary-200" />
             </div>
             Nenhuma publicação ainda.<br/>Seja o primeiro a compartilhar!
           </motion.div>

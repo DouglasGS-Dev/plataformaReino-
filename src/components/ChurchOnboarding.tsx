@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Church, Shield, CheckCircle2, ArrowRight, Loader2, Users, Key, ArrowLeft } from 'lucide-react';
+import { Shield, CheckCircle2, ArrowRight, Loader2, Users, Key, ArrowLeft } from 'lucide-react';
+import { Logo } from './Logo';
 import { db, auth } from '../firebase';
 import { collection, addDoc, doc, updateDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 
@@ -105,21 +106,21 @@ const ChurchOnboarding: React.FC<ChurchOnboardingProps> = ({ onComplete }) => {
     return (
       <div className="fixed inset-0 bg-white z-50 flex items-center justify-center p-6 overflow-y-auto">
         <div className="max-w-md w-full space-y-8 text-center py-12">
-          <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto">
-            <Church size={40} />
+          <div className="w-20 h-20 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mx-auto">
+            <Logo className="w-12 h-12" showText={false} />
           </div>
           
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-slate-900">Bem-vindo ao SaaS Church</h1>
+            <h1 className="text-3xl font-bold text-slate-900">Bem-vindo ao REINO</h1>
             <p className="text-slate-500">Como você deseja começar?</p>
           </div>
 
           <div className="space-y-4 mt-8">
             <button
               onClick={() => { setMode('create'); setError(null); }}
-              className="w-full p-6 bg-white border-2 border-slate-100 rounded-2xl hover:border-indigo-500 hover:bg-indigo-50 transition-all group flex flex-col items-center gap-3"
+              className="w-full p-6 bg-white border-2 border-slate-100 rounded-2xl hover:border-primary hover:bg-primary/5 transition-all group flex flex-col items-center gap-3"
             >
-              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Shield size={24} />
               </div>
               <div>
@@ -156,8 +157,8 @@ const ChurchOnboarding: React.FC<ChurchOnboardingProps> = ({ onComplete }) => {
           <ArrowLeft size={24} />
         </button>
 
-        <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto">
-          {mode === 'create' ? <Church size={40} /> : <Key size={40} />}
+        <div className="w-20 h-20 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mx-auto">
+          {mode === 'create' ? <Logo className="w-12 h-12" showText={false} /> : <Key size={40} />}
         </div>
         
         <div className="space-y-2">
@@ -187,20 +188,20 @@ const ChurchOnboarding: React.FC<ChurchOnboardingProps> = ({ onComplete }) => {
                 value={churchName}
                 onChange={(e) => setChurchName(e.target.value)}
                 placeholder="Ex: Igreja Batista Central"
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-colors"
                 disabled={isLoading}
               />
             </div>
 
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-3 mt-6">
-              <CheckCircle2 className="text-indigo-600 mt-1" size={20} />
+              <CheckCircle2 className="text-primary mt-1" size={20} />
               <div>
                 <h4 className="font-bold text-slate-800">Ambiente Exclusivo</h4>
                 <p className="text-sm text-slate-500">Sua igreja terá um banco de dados isolado e seguro.</p>
               </div>
             </div>
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-3">
-              <Shield className="text-indigo-600 mt-1" size={20} />
+              <Shield className="text-primary mt-1" size={20} />
               <div>
                 <h4 className="font-bold text-slate-800">Você será o Administrador</h4>
                 <p className="text-sm text-slate-500">Controle total sobre membros, ministérios e configurações.</p>
@@ -232,7 +233,7 @@ const ChurchOnboarding: React.FC<ChurchOnboardingProps> = ({ onComplete }) => {
           disabled={isLoading || (mode === 'create' ? !churchName.trim() : !inviteCode.trim())}
           className={`w-full py-4 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
             mode === 'create' 
-              ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' 
+              ? 'btn-primary' 
               : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'
           }`}
         >

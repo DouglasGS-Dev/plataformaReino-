@@ -1,116 +1,264 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, GraduationCap, Clock, ChevronRight, CheckCircle2, PlayCircle, Lock, Search, Filter } from 'lucide-react';
+import { BookOpen, GraduationCap, Clock, ChevronRight, CheckCircle2, PlayCircle, Lock, Search, Filter, ArrowLeft, CheckCircle, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, setDoc, orderBy } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 
-interface EBDClass {
+interface EBDTrack {
   id: string;
   name: string;
+  description?: string;
+  churchId: string;
+  order: number;
+}
+
+interface EBDCourse {
+  id: string;
+  trackId: string;
+  name: string;
+  description?: string;
+  churchId: string;
+  order: number;
+}
+
+interface EBDClass {
+  id: string;
+  courseId: string;
+  churchId: string;
+  name: string;
+  teacherId: string;
   teacherName: string;
   category: string;
   description?: string;
   thumbnailUrl?: string;
-  churchId: string;
+  order: number;
 }
 
 interface EBDLesson {
   id: string;
+  classId: string;
   title: string;
   content: string;
-  order: number;
   videoUrl?: string;
   duration?: string;
+  order: number;
 }
 
 interface Enrollment {
   id: string;
-  classId: string;
   userId: string;
+  churchId: string;
+  trackId?: string;
+  courseId?: string;
+  classId?: string;
   status: 'active' | 'completed';
   progress: number;
+  completedLessons?: string[];
   enrolledAt: any;
+  updatedAt: any;
 }
 
 export default function EBD() {
   const { churchId } = useOutletContext<{ churchId: string }>();
+  const [tracks, setTracks] = useState<EBDTrack[]>([]);
+  const [courses, setCourses] = useState<EBDCourse[]>([]);
   const [classes, setClasses] = useState<EBDClass[]>([]);
   const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [view, setView] = useState<'tracks' | 'courses' | 'classes' | 'lessons' | 'attendance'>('tracks');
+  const [selectedTrack, setSelectedTrack] = useState<EBDTrack | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<EBDCourse | null>(null);
   const [selectedClass, setSelectedClass] = useState<EBDClass | null>(null);
   const [lessons, setLessons] = useState<EBDLesson[]>([]);
   const [activeLesson, setActiveLesson] = useState<EBDLesson | null>(null);
-  const [enrolling, setEnrolling] = useState(false);
+  const [enrolling, setEnrolling] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
+  const [myClassesAsTeacher, setMyClassesAsTeacher] = useState<EBDClass[]>([]);
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [attendanceRecord, setAttendanceRecord] = useState<any | null>(null);
+  const [classEnrollments, setClassEnrollments] = useState<any[]>([]);
+  const [savingAttendance, setSavingAttendance] = useState(false);
 
   useEffect(() => {
     if (!churchId || !auth.currentUser) return;
 
-    // Fetch all classes in the church
-    const classesQuery = query(
-      collection(db, 'ebd_classes'),
-      where('churchId', '==', churchId)
-    );
+    const tracksQuery = query(collection(db, 'ebd_tracks'), where('churchId', '==', churchId), orderBy('order', 'asc'));
+    const coursesQuery = query(collection(db, 'ebd_courses'), where('churchId', '==', churchId), orderBy('order', 'asc'));
+    const classesQuery = query(collection(db, 'ebd_classes'), where('churchId', '==', churchId), orderBy('order', 'asc'));
 
+    const unsubscribeTracks = onSnapshot(tracksQuery, (snapshot) => setTracks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDTrack))));
+    const unsubscribeCourses = onSnapshot(coursesQuery, (snapshot) => setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDCourse))));
     const unsubscribeClasses = onSnapshot(classesQuery, (snapshot) => {
-      setClasses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDClass)));
+      const fetchedClasses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDClass));
+      setClasses(fetchedClasses);
+      setMyClassesAsTeacher(fetchedClasses.filter(c => c.teacherId === auth.currentUser?.uid));
     });
 
     // Fetch user enrollments
-    const enrollmentsQuery = query(
-      collection(db, 'ebd_enrollments'),
-      where('userId', '==', auth.currentUser.uid)
-    );
-
+    const enrollmentsQuery = query(collection(db, 'ebd_enrollments'), where('userId', '==', auth.currentUser.uid));
     const unsubscribeEnrollments = onSnapshot(enrollmentsQuery, (snapshot) => {
       setMyEnrollments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Enrollment)));
       setLoading(false);
     });
 
     return () => {
+      unsubscribeTracks();
+      unsubscribeCourses();
       unsubscribeClasses();
       unsubscribeEnrollments();
     };
   }, [churchId]);
 
+  useEffect(() => {
+    if (view === 'attendance' && selectedClass && attendanceDate) {
+      const q = query(
+        collection(db, 'ebd_attendance'),
+        where('classId', '==', selectedClass.id),
+        where('date', '==', attendanceDate)
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          setAttendanceRecord({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
+        } else {
+          setAttendanceRecord(null);
+        }
+      });
+
+      // Fetch enrollments for this class to show students
+      const enrollmentsQuery = query(
+        collection(db, 'ebd_enrollments'),
+        where('classId', '==', selectedClass.id)
+      );
+
+      const unsubscribeEnrollments = onSnapshot(enrollmentsQuery, async (snapshot) => {
+        const enrollmentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const withUsers = await Promise.all(enrollmentsData.map(async (e: any) => {
+          const userDoc = await getDoc(doc(db, 'users', e.userId));
+          return { ...e, user: userDoc.exists() ? userDoc.data() : { displayName: 'Usuário Desconhecido' } };
+        }));
+        setClassEnrollments(withUsers);
+      });
+
+      return () => {
+        unsubscribe();
+        unsubscribeEnrollments();
+      };
+    }
+  }, [view, selectedClass, attendanceDate]);
+
+  const handleToggleAttendance = async (userId: string) => {
+    if (!selectedClass || !churchId) return;
+    setSavingAttendance(true);
+    try {
+      const currentPresent = attendanceRecord?.presentStudents || [];
+      const isPresent = currentPresent.includes(userId);
+      const newPresent = isPresent 
+        ? currentPresent.filter((id: string) => id !== userId)
+        : [...currentPresent, userId];
+
+      if (attendanceRecord) {
+        await updateDoc(doc(db, 'ebd_attendance', attendanceRecord.id), {
+          presentStudents: newPresent,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, 'ebd_attendance'), {
+          classId: selectedClass.id,
+          date: attendanceDate,
+          presentStudents: newPresent,
+          churchId,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      console.error("Error saving attendance:", error);
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
   const fetchLessons = async (classId: string) => {
     const q = query(
       collection(db, `ebd_classes/${classId}/lessons`),
-      where('order', '>=', 0)
+      orderBy('order', 'asc')
     );
     const snapshot = await getDocs(q);
     const lessonsData = snapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as EBDLesson))
-      .sort((a, b) => a.order - b.order);
+      .map(doc => ({ id: doc.id, ...doc.data() } as EBDLesson));
     setLessons(lessonsData);
   };
 
-  const handleEnroll = async (classId: string) => {
+  const handleEnroll = async (type: 'track' | 'course' | 'class', id: string) => {
     if (!auth.currentUser) return;
-    setEnrolling(true);
+    setEnrolling(id);
     try {
-      await addDoc(collection(db, 'ebd_enrollments'), {
-        classId,
+      const enrollmentData: any = {
         userId: auth.currentUser.uid,
         churchId,
         status: 'active',
         progress: 0,
-        enrolledAt: serverTimestamp()
-      });
+        completedLessons: [],
+        enrolledAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      if (type === 'track') enrollmentData.trackId = id;
+      else if (type === 'course') enrollmentData.courseId = id;
+      else enrollmentData.classId = id;
+      
+      await addDoc(collection(db, 'ebd_enrollments'), enrollmentData);
     } catch (error) {
       console.error("Error enrolling:", error);
     } finally {
-      setEnrolling(false);
+      setEnrolling(null);
     }
   };
 
-  const isEnrolled = (classId: string) => {
-    return myEnrollments.some(e => e.classId === classId);
+  const handleMarkAsComplete = async (lessonId: string) => {
+    if (!selectedClass || !auth.currentUser) return;
+    const enrollment = getEnrollment('class', selectedClass.id);
+    if (!enrollment) return;
+
+    setCompleting(true);
+    try {
+      const completedLessons = enrollment.completedLessons || [];
+      if (!completedLessons.includes(lessonId)) {
+        const newCompleted = [...completedLessons, lessonId];
+        const progress = Math.round((newCompleted.length / lessons.length) * 100);
+        
+        await updateDoc(doc(db, 'ebd_enrollments', enrollment.id), {
+          completedLessons: newCompleted,
+          progress,
+          status: progress === 100 ? 'completed' : 'active',
+          updatedAt: serverTimestamp()
+        });
+      }
+      setActiveLesson(null);
+    } catch (error) {
+      console.error("Error completing lesson:", error);
+    } finally {
+      setCompleting(false);
+    }
   };
 
-  const getEnrollment = (classId: string) => {
-    return myEnrollments.find(e => e.classId === classId);
+  const isEnrolled = (type: 'track' | 'course' | 'class', id: string) => {
+    if (type === 'track') return myEnrollments.some(e => e.trackId === id);
+    if (type === 'course') return myEnrollments.some(e => e.courseId === id);
+    return myEnrollments.some(e => e.classId === id);
+  };
+
+  const getEnrollment = (type: 'track' | 'course' | 'class', id: string) => {
+    if (type === 'track') return myEnrollments.find(e => e.trackId === id);
+    if (type === 'course') return myEnrollments.find(e => e.courseId === id);
+    return myEnrollments.find(e => e.classId === id);
+  };
+
+  const isLessonCompleted = (lessonId: string) => {
+    if (!selectedClass) return false;
+    const enrollment = getEnrollment('class', selectedClass.id);
+    return enrollment?.completedLessons?.includes(lessonId) || false;
   };
 
   const filteredClasses = classes.filter(c => 
@@ -118,117 +266,79 @@ export default function EBD() {
     c.teacherName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (selectedClass) {
+  const formatVideoUrl = (url: string) => {
+    if (!url) return null;
+    if (url.includes('youtube.com/watch?v=')) {
+      return url.replace('watch?v=', 'embed/');
+    }
+    if (url.includes('youtu.be/')) {
+      return url.replace('youtu.be/', 'youtube.com/embed/');
+    }
+    return url;
+  };
+
+  if (activeLesson) {
+    const videoEmbedUrl = formatVideoUrl(activeLesson.videoUrl || '');
     return (
       <div className="space-y-6 pb-20">
         <button 
-          onClick={() => { setSelectedClass(null); setLessons([]); setActiveLesson(null); }}
-          className="flex items-center text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+          onClick={() => setActiveLesson(null)}
+          className="flex items-center text-primary font-medium hover:text-primary/80 transition-colors"
         >
-          <ChevronRight className="rotate-180 mr-1" size={20} />
-          Voltar para Classes
+          <ArrowLeft className="mr-1" size={20} />
+          Voltar para Lições
         </button>
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="h-48 bg-gradient-to-r from-indigo-600 to-violet-600 relative">
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute bottom-6 left-6 right-6 text-white">
-              <span className="px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-xs font-medium uppercase tracking-wider mb-2 inline-block">
-                {selectedClass.category}
-              </span>
-              <h2 className="text-3xl font-bold">{selectedClass.name}</h2>
-              <p className="text-indigo-100 flex items-center gap-2 mt-1">
-                <GraduationCap size={18} />
-                Prof. {selectedClass.teacherName}
+          {videoEmbedUrl && (
+            <div className="aspect-video bg-black relative">
+              <iframe
+                src={videoEmbedUrl}
+                className="w-full h-full"
+                allowFullScreen
+                title={activeLesson.title}
+              />
+            </div>
+          )}
+          <div className="p-6">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">{activeLesson.title}</h2>
+            <div className="flex items-center gap-4 text-sm text-slate-500 mb-6">
+              <span className="flex items-center gap-1"><Clock size={16} /> {activeLesson.duration || "15 min"}</span>
+              <span className="flex items-center gap-1"><BookOpen size={16} /> Lição {activeLesson.order}</span>
+            </div>
+            
+            <div className="prose prose-slate max-w-none">
+              <p className="whitespace-pre-wrap text-slate-600 leading-relaxed">
+                {activeLesson.content}
               </p>
             </div>
           </div>
-
-          <div className="p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Sobre esta classe</h3>
-            <p className="text-slate-600 leading-relaxed">
-              {selectedClass.description || "Nenhuma descrição disponível para esta classe."}
-            </p>
-          </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-slate-900">Lições</h3>
-            <span className="text-sm text-slate-500">{lessons.length} lições disponíveis</span>
-          </div>
-
-          {lessons.length === 0 ? (
-            <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center">
-              <BookOpen className="mx-auto text-slate-300 mb-4" size={48} />
-              <p className="text-slate-500">Nenhuma lição cadastrada para esta classe ainda.</p>
-              <button 
-                onClick={() => fetchLessons(selectedClass.id)}
-                className="mt-4 text-indigo-600 font-medium"
-              >
-                Tentar carregar novamente
-              </button>
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              {lessons.map((lesson, index) => {
-                const isLocked = !isEnrolled(selectedClass.id);
-                return (
-                  <motion.div
-                    key={lesson.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className={`bg-white p-4 rounded-2xl border border-slate-200 flex items-center gap-4 ${isLocked ? 'opacity-75' : 'hover:border-indigo-300 cursor-pointer shadow-sm transition-all'}`}
-                    onClick={() => !isLocked && setActiveLesson(lesson)}
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isLocked ? 'bg-slate-100 text-slate-400' : 'bg-indigo-50 text-indigo-600'}`}>
-                      {isLocked ? <Lock size={20} /> : <PlayCircle size={24} />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-900 truncate">{lesson.title}</h4>
-                      <p className="text-xs text-slate-500 flex items-center gap-2 mt-1">
-                        <Clock size={12} />
-                        {lesson.duration || "15 min"}
-                      </p>
-                    </div>
-                    {!isLocked && (
-                      <div className="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center">
-                        <ChevronRight size={16} className="text-slate-400" />
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
+        <div className="fixed bottom-24 left-6 right-6 md:left-auto md:right-10 md:w-96">
+          <button 
+            onClick={() => handleMarkAsComplete(activeLesson.id)}
+            disabled={completing || isLessonCompleted(activeLesson.id)}
+            className={`w-full py-4 rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 ${
+              isLessonCompleted(activeLesson.id) 
+                ? 'bg-emerald-100 text-emerald-700 cursor-default' 
+                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200'
+            }`}
+          >
+            {completing ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : isLessonCompleted(activeLesson.id) ? (
+              <><CheckCircle size={20} /> Lição Concluída</>
+            ) : (
+              <><CheckCircle2 size={20} /> Marcar como Concluída</>
+            )}
+          </button>
         </div>
-
-        {!isEnrolled(selectedClass.id) && (
-          <div className="fixed bottom-24 left-6 right-6 md:left-auto md:right-10 md:w-96">
-            <div className="bg-white p-6 rounded-3xl shadow-2xl border border-indigo-100 flex flex-col gap-4">
-              <div>
-                <h4 className="font-bold text-slate-900">Comece agora!</h4>
-                <p className="text-sm text-slate-500">Inscreva-se para ter acesso a todas as lições e materiais.</p>
-              </div>
-              <button 
-                onClick={() => handleEnroll(selectedClass.id)}
-                disabled={enrolling}
-                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
-              >
-                {enrolling ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>Matricular-se Gratuitamente</>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
 
+  // Hierarchical Views
   return (
     <div className="space-y-8 pb-20">
       <header>
@@ -236,52 +346,86 @@ export default function EBD() {
         <p className="text-slate-500 mt-1">Cresça no conhecimento da Palavra de Deus.</p>
       </header>
 
-      {/* Search and Filters */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-        <input 
-          type="text"
-          placeholder="Buscar classes ou professores..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none shadow-sm transition-all"
-        />
+      {/* Breadcrumbs/Navigation */}
+      <div className="flex items-center gap-2 text-sm text-slate-500">
+        <button onClick={() => { setView('tracks'); setSelectedTrack(null); setSelectedCourse(null); setSelectedClass(null); }} className="hover:text-primary">Trilhas</button>
+        {selectedTrack && (
+          <>
+            <ChevronRight size={16} />
+            <button onClick={() => { setView('courses'); setSelectedCourse(null); setSelectedClass(null); }} className="hover:text-primary">{selectedTrack.name}</button>
+          </>
+        )}
+        {selectedCourse && (
+          <>
+            <ChevronRight size={16} />
+            <button onClick={() => { setView('classes'); setSelectedClass(null); }} className="hover:text-primary">{selectedCourse.name}</button>
+          </>
+        )}
+        {selectedClass && (
+          <>
+            <ChevronRight size={16} />
+            <button onClick={() => setView('lessons')} className="hover:text-primary">{selectedClass.name}</button>
+          </>
+        )}
       </div>
 
-      {/* My Classes */}
-      {myEnrollments.length > 0 && (
+      {view === 'tracks' && myClassesAsTeacher.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-slate-900">Minhas Classes</h3>
-            <button className="text-sm font-medium text-indigo-600">Ver todas</button>
+          <div className="flex items-center gap-2">
+            <GraduationCap className="text-primary" size={24} />
+            <h3 className="text-xl font-bold text-slate-900">Minhas Classes (Professor)</h3>
           </div>
-          <div className="grid gap-4">
-            {myEnrollments.map(enrollment => {
-              const classData = classes.find(c => c.id === enrollment.classId);
-              if (!classData) return null;
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {myClassesAsTeacher.map(c => (
+              <motion.div 
+                key={c.id} 
+                whileTap={{ scale: 0.98 }} 
+                className="bg-primary/5 p-6 rounded-3xl border border-primary/20 shadow-sm transition-all"
+              >
+                <h4 className="font-bold text-slate-900">{c.name}</h4>
+                <p className="text-sm text-slate-500 mt-1">{c.category}</p>
+                <div className="mt-4 flex gap-2">
+                  <button 
+                    onClick={() => { setSelectedClass(c); setView('attendance'); }} 
+                    className="flex-1 py-2 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={16} /> Fazer Chamada
+                  </button>
+                  <button 
+                    onClick={() => { setSelectedClass(c); fetchLessons(c.id); setView('lessons'); }} 
+                    className="flex-1 py-2 bg-white text-primary border border-primary/20 rounded-xl font-bold text-sm hover:bg-primary/5"
+                  >
+                    Ver Lições
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {view === 'tracks' && (
+        <section className="space-y-4">
+          <h3 className="text-xl font-bold text-slate-900">Trilhas de Crescimento</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tracks.map(track => {
+              const enrolled = isEnrolled('track', track.id);
+              const enrollment = getEnrollment('track', track.id);
               return (
-                <motion.div 
-                  key={enrollment.id}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { setSelectedClass(classData); fetchLessons(classData.id); }}
-                  className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer hover:border-indigo-300 transition-all"
-                >
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                    <BookOpen size={28} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-slate-900 truncate">{classData.name}</h4>
-                    <p className="text-sm text-slate-500 mb-2">Prof. {classData.teacherName}</p>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-indigo-600 rounded-full transition-all duration-500" 
-                        style={{ width: `${enrollment.progress}%` }}
-                      />
+                <motion.div key={track.id} whileTap={{ scale: 0.98 }} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all">
+                  <h4 className="font-bold text-slate-900">{track.name}</h4>
+                  <p className="text-sm text-slate-500 mt-1">{track.description}</p>
+                  {enrolled ? (
+                    <div className="mt-4">
+                      <div className="flex justify-between text-xs mb-1"><span>Progresso</span><span>{enrollment?.progress || 0}%</span></div>
+                      <div className="h-2 bg-slate-100 rounded-full"><div className="h-full bg-primary rounded-full" style={{ width: `${enrollment?.progress || 0}%` }} /></div>
+                      <button onClick={() => { setSelectedTrack(track); setView('courses'); }} className="mt-3 text-primary text-sm font-bold hover:underline">Continuar</button>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-indigo-600">{enrollment.progress}%</span>
-                  </div>
+                  ) : (
+                    <button onClick={() => handleEnroll('track', track.id)} disabled={enrolling === track.id} className="mt-4 w-full py-2 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90">
+                      {enrolling === track.id ? 'Matriculando...' : 'Matricular-se'}
+                    </button>
+                  )}
                 </motion.div>
               );
             })}
@@ -289,53 +433,149 @@ export default function EBD() {
         </section>
       )}
 
-      {/* Available Classes */}
-      <section className="space-y-4">
-        <h3 className="text-xl font-bold text-slate-900">Classes Disponíveis</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {loading ? (
-            <div className="col-span-full py-12 text-center text-slate-500">Carregando classes...</div>
-          ) : filteredClasses.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-slate-500">Nenhuma classe encontrada.</div>
-          ) : (
-            filteredClasses.map(c => (
-              <motion.div 
-                key={c.id}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => { setSelectedClass(c); fetchLessons(c.id); }}
-                className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden group cursor-pointer hover:border-indigo-300 transition-all"
-              >
-                <div className="h-32 bg-slate-100 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-violet-500/20" />
-                  <div className="absolute top-4 left-4">
-                    <span className="px-2 py-1 bg-white/80 backdrop-blur-sm rounded-lg text-[10px] font-bold uppercase tracking-wider text-indigo-600">
-                      {c.category}
-                    </span>
-                  </div>
+      {view === 'attendance' && selectedClass && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setView('tracks')}
+              className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <ArrowLeft size={24} className="text-slate-600" />
+            </button>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Chamada: {selectedClass.name}</h2>
+              <p className="text-sm text-slate-500">Marque a presença dos alunos para o dia selecionado.</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="text-primary" size={20} />
+                <input 
+                  type="date" 
+                  value={attendanceDate}
+                  onChange={(e) => setAttendanceDate(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-primary transition-all"
+                />
+              </div>
+              <div className="text-sm font-medium text-slate-500 bg-slate-50 px-4 py-2 rounded-xl">
+                {attendanceRecord?.presentStudents?.length || 0} presentes de {classEnrollments.length} alunos
+              </div>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {classEnrollments.length === 0 ? (
+                <div className="py-12 text-center text-slate-500">
+                  Nenhum aluno matriculado nesta classe.
                 </div>
-                <div className="p-5">
-                  <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{c.name}</h4>
-                  <p className="text-sm text-slate-500 mt-1">Prof. {c.teacherName}</p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-xs text-slate-400">
-                      <Clock size={14} />
-                      12 Lições
+              ) : (
+                classEnrollments.map((e) => {
+                  const isPresent = attendanceRecord?.presentStudents?.includes(e.userId);
+                  return (
+                    <div key={e.id} className="py-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold">
+                          {e.user?.displayName?.charAt(0) || e.user?.name?.charAt(0) || '?'}
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900">{e.user?.displayName || e.user?.name}</div>
+                          <div className="text-xs text-slate-500">{e.user?.email}</div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleToggleAttendance(e.userId)}
+                        disabled={savingAttendance}
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+                          isPresent 
+                            ? 'bg-emerald-100 text-emerald-600 shadow-sm shadow-emerald-100' 
+                            : 'bg-slate-50 text-slate-300 hover:bg-slate-100 border border-slate-100'
+                        }`}
+                      >
+                        {isPresent ? <CheckCircle size={28} /> : <div className="w-6 h-6 rounded-full border-2 border-slate-200" />}
+                      </button>
                     </div>
-                    {isEnrolled(c.id) ? (
-                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-                        <CheckCircle2 size={14} />
-                        Inscrito
-                      </span>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {view === 'courses' && selectedTrack && (
+        <section className="space-y-4">
+          <h3 className="text-xl font-bold text-slate-900">Cursos em {selectedTrack.name}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {courses.filter(c => c.trackId === selectedTrack.id).map(course => {
+              const enrolled = isEnrolled('course', course.id);
+              const enrollment = getEnrollment('course', course.id);
+              return (
+                <motion.div key={course.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all">
+                  <h4 className="font-bold text-slate-900">{course.name}</h4>
+                  <p className="text-sm text-slate-500 mt-1">{course.description}</p>
+                  {enrolled ? (
+                    <div className="mt-4">
+                      <div className="flex justify-between text-xs mb-1"><span>Progresso</span><span>{enrollment?.progress || 0}%</span></div>
+                      <div className="h-2 bg-slate-100 rounded-full"><div className="h-full bg-primary rounded-full" style={{ width: `${enrollment?.progress || 0}%` }} /></div>
+                      <button onClick={() => { setSelectedCourse(course); setView('classes'); }} className="mt-3 text-primary text-sm font-bold hover:underline">Continuar</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => handleEnroll('course', course.id)} disabled={enrolling === course.id} className="mt-4 w-full py-2 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90">
+                      {enrolling === course.id ? 'Matriculando...' : 'Matricular-se'}
+                    </button>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {view === 'classes' && selectedCourse && (
+        <section className="space-y-4">
+          <h3 className="text-xl font-bold text-slate-900">Classes em {selectedCourse.name}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {classes.filter(c => c.courseId === selectedCourse.id).map(c => {
+              const enrolled = isEnrolled('class', c.id);
+              const enrollment = getEnrollment('class', c.id);
+              return (
+                <motion.div key={c.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+                  <div className="p-5">
+                    <h4 className="font-bold text-slate-900">{c.name}</h4>
+                    <p className="text-sm text-slate-500 mt-1">Prof. {c.teacherName}</p>
+                    {enrolled ? (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1"><span>Progresso</span><span>{enrollment?.progress || 0}%</span></div>
+                        <div className="h-2 bg-slate-100 rounded-full"><div className="h-full bg-primary rounded-full" style={{ width: `${enrollment?.progress || 0}%` }} /></div>
+                        <button onClick={() => { setSelectedClass(c); fetchLessons(c.id); setView('lessons'); }} className="mt-3 text-primary text-sm font-bold hover:underline">Continuar</button>
+                      </div>
                     ) : (
-                      <span className="text-xs font-bold text-indigo-600">Ver detalhes</span>
+                      <button onClick={() => handleEnroll('class', c.id)} disabled={enrolling === c.id} className="mt-4 w-full py-2 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90">
+                        {enrolling === c.id ? 'Matriculando...' : 'Matricular-se'}
+                      </button>
                     )}
                   </div>
-                </div>
-              </motion.div>
-            ))
-          )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      
+      {view === 'lessons' && selectedClass && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-slate-900">Lições de {selectedClass.name}</h3>
+            <span className="text-sm text-slate-500">{lessons.length} lições</span>
+          </div>
+          {lessons.map((lesson, index) => (
+            <motion.div key={lesson.id} onClick={() => setActiveLesson(lesson)} className="bg-white p-4 rounded-2xl border border-slate-200 cursor-pointer hover:border-primary/30">
+              <h4 className="font-bold text-slate-900">{lesson.title}</h4>
+            </motion.div>
+          ))}
         </div>
-      </section>
+      )}
     </div>
   );
 }

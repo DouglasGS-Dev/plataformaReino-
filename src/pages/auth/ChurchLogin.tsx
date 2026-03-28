@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType } from '../../firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Logo } from '../../components/Logo';
 
 const MASTER_ADMIN_EMAIL = "douglassousa95475@gmail.com";
 
@@ -117,28 +118,25 @@ export default function ChurchLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-white flex flex-col lg:flex-row">
       {/* Left Side: Branding & Info */}
-      <div className="lg:w-1/2 bg-indigo-900 p-12 lg:p-24 flex flex-col justify-between relative overflow-hidden">
+      <div className="lg:w-1/2 primary-gradient p-12 lg:p-24 flex flex-col justify-between relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-10">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-400 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary-100 rounded-full blur-3xl animate-pulse delay-1000" />
         </div>
 
         <div className="relative z-10">
-          <Link to="/" className="flex items-center gap-3 text-white mb-12">
-            <div className="w-10 h-10 bg-white text-indigo-900 rounded-xl flex items-center justify-center shadow-lg">
-              <ChurchIcon size={24} />
-            </div>
-            <span className="text-2xl font-black tracking-tighter">ECCLESIA<span className="text-indigo-400">OS</span></span>
+          <Link to="/" className="inline-block mb-12">
+            <Logo className="w-20 h-20" showText={true} stacked={true} />
           </Link>
 
           <div className="space-y-6 max-w-md">
             <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
               Gestão Ministerial <br />
-              <span className="text-indigo-300 italic serif font-normal">em um só lugar.</span>
+              <span className="text-white/80 italic serif font-normal">em um só lugar.</span>
             </h1>
-            <p className="text-indigo-100 text-lg leading-relaxed">
+            <p className="text-white/90 text-lg leading-relaxed">
               Acesse o painel administrativo da sua igreja para gerenciar membros, ministérios, finanças e muito mais.
             </p>
           </div>
@@ -146,16 +144,16 @@ export default function ChurchLoginPage() {
 
         <div className="relative z-10 grid grid-cols-2 gap-8 mt-12">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-white font-bold text-sm uppercase tracking-widest">
               <Building2 size={16} /> Multi-Tenant
             </div>
-            <p className="text-indigo-100/60 text-xs">Ambiente isolado e seguro para sua congregação.</p>
+            <p className="text-white/60 text-xs">Ambiente isolado e seguro para sua congregação.</p>
           </div>
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-white font-bold text-sm uppercase tracking-widest">
               <Users size={16} /> Discipulado
             </div>
-            <p className="text-indigo-100/60 text-xs">Acompanhe o crescimento espiritual de cada membro.</p>
+            <p className="text-white/60 text-xs">Acompanhe o crescimento espiritual de cada membro.</p>
           </div>
         </div>
       </div>
@@ -200,7 +198,7 @@ export default function ChurchLoginPage() {
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3 text-blue-600 text-sm"
+                className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-start gap-3 text-primary text-sm"
               >
                 <CheckCircle2 size={18} className="shrink-0 mt-0.5" />
                 <p>E-mail de redefinição enviado! Verifique sua caixa de entrada.</p>
@@ -219,7 +217,7 @@ export default function ChurchLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="pastor@igreja.com"
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                 />
               </div>
             </div>
@@ -230,7 +228,7 @@ export default function ChurchLoginPage() {
                 <button 
                   type="button"
                   onClick={handleForgotPassword}
-                  className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
+                  className="text-xs font-bold text-primary hover:text-primary/80"
                 >
                   Esqueceu a senha?
                 </button>
@@ -243,7 +241,7 @@ export default function ChurchLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                 />
               </div>
             </div>
@@ -251,7 +249,7 @@ export default function ChurchLoginPage() {
             <button 
               type="submit"
               disabled={loading || success}
-              className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-4 primary-gradient text-white rounded-2xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -281,7 +279,7 @@ export default function ChurchLoginPage() {
 
           <p className="text-center text-sm text-slate-500">
             Ainda não tem uma conta para sua igreja? <br />
-            <Link to="#" className="text-indigo-600 font-bold hover:underline">Cadastre sua igreja aqui</Link>
+            <Link to="/register" className="text-primary font-bold hover:underline">Cadastre sua igreja aqui</Link>
           </p>
         </motion.div>
       </div>

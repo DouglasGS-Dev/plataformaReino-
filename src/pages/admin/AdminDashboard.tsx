@@ -9,10 +9,10 @@ import { Church } from '../../types';
 export default function AdminDashboard() {
   const { church } = useOutletContext<{ church: Church }>();
   const [stats, setStats] = useState([
-    { name: 'Total de Membros', value: '0', change: '...', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { name: 'Células Ativas', value: '0', change: '...', icon: Network, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-    { name: 'Entradas (Mês)', value: 'R$ 0', change: '...', icon: Wallet, color: 'text-indigo-600', bg: 'bg-indigo-100' },
-    { name: 'Eventos Próximos', value: '0', change: '...', icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-100' },
+    { name: 'Total de Membros', value: '0', change: '...', icon: Users, color: 'text-primary', bg: 'bg-primary-50' },
+    { name: 'Células Ativas', value: '0', change: '...', icon: Network, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { name: 'Entradas (Mês)', value: 'R$ 0', change: '...', icon: Wallet, color: 'text-primary', bg: 'bg-primary-50' },
+    { name: 'Eventos Próximos', value: '0', change: '...', icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50' },
   ]);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm"
+            className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center`}>
@@ -99,13 +99,13 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-96">
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-96">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Crescimento de Membros</h3>
           <div className="flex items-center justify-center h-full text-slate-400">
             [Gráfico de Linha Aqui]
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-96">
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-96">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Receitas vs Despesas</h3>
           <div className="flex items-center justify-center h-full text-slate-400">
             [Gráfico de Barras Aqui]

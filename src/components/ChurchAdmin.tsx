@@ -52,10 +52,10 @@ import {
 import { UserProfile, Church, Ministry, Cell, Event, FinancialTransaction } from '../types';
 import { 
   AddMinistryModal, 
-  AddCellModal, 
+  CellModal, 
   AddEventModal, 
   AddFinanceModal,
-  AddMemberModal,
+  MemberModal,
   AddScheduleModal
 } from './AdminModals';
 import { ConfirmModal, Toast } from './UIComponents';
@@ -84,6 +84,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [isAddingFinance, setIsAddingFinance] = useState(false);
   const [isAddingSchedule, setIsAddingSchedule] = useState(false);
+  const [memberToEdit, setMemberToEdit] = useState<UserProfile | null>(null);
   const [initialFinanceType, setInitialFinanceType] = useState<'income' | 'expense'>('income');
   const [editingMinistry, setEditingMinistry] = useState<Ministry | undefined>();
   const [editingCell, setEditingCell] = useState<Cell | undefined>();
@@ -219,22 +220,22 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
   const renderDashboard = () => (
     <div className="space-y-6">
       {church && (
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="primary-gradient rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold">{church.name}</h2>
-            <p className="text-indigo-100 mt-1">Bem-vindo ao painel administrativo da sua igreja.</p>
+            <p className="text-white/80 mt-1">Bem-vindo ao painel administrativo da sua igreja.</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 text-center min-w-[200px]">
-            <div className="text-xs text-indigo-100 uppercase tracking-wider font-bold mb-1">Código de Convite</div>
+            <div className="text-xs text-white/80 uppercase tracking-wider font-bold mb-1">Código de Convite</div>
             <div className="text-3xl font-mono font-bold tracking-widest">{church.inviteCode}</div>
-            <div className="text-[10px] text-indigo-200 mt-1">Compartilhe com seus membros</div>
+            <div className="text-[10px] text-white/60 mt-1">Compartilhe com seus membros</div>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Membros Ativos', value: stats.totalMembers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Membros Ativos', value: stats.totalMembers, icon: Users, color: 'text-primary', bg: 'bg-primary/10' },
           { label: 'Ministérios', value: stats.totalMinistries, icon: Briefcase, color: 'text-purple-600', bg: 'bg-purple-50' },
           { label: 'Células', value: stats.totalCells, icon: Home, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Saldo (Mês)', value: `R$ ${stats.balance.toLocaleString()}`, icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' }
@@ -263,7 +264,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         <div className="glass-card border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-slate-900">Novos Membros</h3>
-            <button onClick={() => setActiveView('members')} className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+            <button onClick={() => setActiveView('members')} className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1">
               Ver todos <ChevronRight size={14} />
             </button>
           </div>
@@ -283,7 +284,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                 </div>
                 <div className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase border ${
                   member.role === 'admin' ? 'bg-red-50 text-red-700 border-red-100' :
-                  member.role === 'pastor' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                  member.role === 'pastor' ? 'bg-primary/10 text-primary border-primary/20' :
                   'bg-slate-50 text-slate-600 border-slate-100'
                 }`}>
                   {member.role}
@@ -297,14 +298,14 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         <div className="glass-card border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-slate-900">Próximos Eventos</h3>
-            <button onClick={() => setActiveView('events')} className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+            <button onClick={() => setActiveView('events')} className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1">
               Ver todos <ChevronRight size={14} />
             </button>
           </div>
           <div className="divide-y divide-slate-50">
             {events.slice(0, 5).map((event) => (
               <div key={event.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex flex-col items-center justify-center text-indigo-600 shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex flex-col items-center justify-center text-primary shrink-0">
                   <span className="text-[10px] font-bold uppercase">{new Date(event.date as any).toLocaleDateString('pt-BR', { month: 'short' })}</span>
                   <span className="text-lg font-bold leading-none">{new Date(event.date as any).getDate()}</span>
                 </div>
@@ -314,7 +315,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                     <Calendar size={12} /> {new Date(event.date as any).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
-                <button className="text-slate-400 hover:text-indigo-600 p-2">
+                <button className="text-slate-400 hover:text-primary p-2">
                   <MoreVertical size={18} />
                 </button>
               </div>
@@ -335,7 +336,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
             <input 
               type="text" 
               placeholder="Buscar membros..." 
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm"
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
             />
           </div>
           <button className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600">
@@ -351,6 +352,8 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Membro</th>
                 <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Função</th>
+                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Status</th>
+                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Tags</th>
                 <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Desde</th>
                 <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Ações</th>
               </tr>
@@ -379,7 +382,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                       onChange={(e) => handleUpdateMemberRole(member.uid, e.target.value)}
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase border outline-none cursor-pointer transition-all ${
                         member.role === 'admin' ? 'bg-red-50 text-red-700 border-red-100' :
-                        member.role === 'pastor' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                        member.role === 'pastor' ? 'bg-primary/10 text-primary border-primary/20' :
                         member.role === 'leader' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                         'bg-slate-50 text-slate-600 border-slate-100'
                       }`}
@@ -390,12 +393,33 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                       <option value="admin">Administrador</option>
                     </select>
                   </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                      member.status === 'active' ? 'bg-emerald-50 text-emerald-700' :
+                      member.status === 'inactive' ? 'bg-slate-100 text-slate-600' :
+                      'bg-amber-50 text-amber-700'
+                    }`}>
+                      {member.status || 'Ativo'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-1 flex-wrap">
+                      {(member.tags || []).map((tag, i) => (
+                        <span key={i} className="px-2 py-1 rounded-md bg-slate-100 text-[10px] text-slate-600">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-sm text-slate-500">
                     {new Date(member.createdAt as any).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
+                      <button 
+                        onClick={() => setMemberToEdit(member)}
+                        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                      >
                         <Edit2 size={16} />
                       </button>
                       <button 
@@ -421,7 +445,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         <h2 className="text-xl font-bold text-slate-900">Ministérios</h2>
         <button 
           onClick={() => setIsAddingMinistry(true)}
-          className="btn-primary px-4 py-2 flex items-center gap-2 text-sm"
+          className="primary-gradient text-white px-4 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2 text-sm"
         >
           <Plus size={16} /> Novo Ministério
         </button>
@@ -431,13 +455,13 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         {ministries.map((ministry) => (
           <div key={ministry.id} className="glass-card border border-slate-200 p-6 hover:shadow-md transition-all group">
             <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                 <Briefcase size={24} />
               </div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setEditingMinistry(ministry)}
-                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                  className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                 >
                   <Edit2 size={16} />
                 </button>
@@ -476,7 +500,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                   setActiveMinistry(ministry);
                   setActiveView('ministry_schedules');
                 }}
-                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                className="text-xs font-bold text-primary hover:text-primary/80 hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
               >
                 Escalas <ChevronRight size={14} />
               </button>
@@ -505,7 +529,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                   setActiveView('ministries');
                   setActiveMinistry(null);
                 }}
-                className="text-slate-400 hover:text-indigo-600 transition-colors"
+                className="text-slate-400 hover:text-primary transition-colors"
               >
                 Ministérios
               </button>
@@ -516,7 +540,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
           </div>
           <button 
             onClick={() => setIsAddingSchedule(true)}
-            className="btn-primary px-4 py-2 flex items-center gap-2 text-sm"
+            className="primary-gradient text-white px-4 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2 text-sm"
           >
             <Plus size={16} /> Nova Escala
           </button>
@@ -548,7 +572,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setEditingSchedule(schedule)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                       >
                         <Edit2 size={16} />
                       </button>
@@ -564,7 +588,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {schedule.roles.map((role: any, idx: number) => (
                       <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                           {role.userName.charAt(0)}
                         </div>
                         <div>
@@ -605,7 +629,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setEditingCell(cell)}
-                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                  className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                 >
                   <Edit2 size={16} />
                 </button>
@@ -650,7 +674,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         <h2 className="text-xl font-bold text-slate-900">Eventos da Igreja</h2>
         <button 
           onClick={() => setIsAddingEvent(true)}
-          className="btn-primary px-4 py-2 flex items-center gap-2 text-sm"
+          className="primary-gradient text-white px-4 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2 text-sm"
         >
           <Plus size={16} /> Novo Evento
         </button>
@@ -670,7 +694,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">{event.title}</h3>
-                  <div className="flex items-center gap-2 text-xs text-indigo-600 font-bold uppercase mt-1">
+                  <div className="flex items-center gap-2 text-xs text-primary font-bold uppercase mt-1">
                     <Calendar size={12} />
                     {new Date(event.date as any).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
                   </div>
@@ -678,7 +702,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                 <div className="flex items-center gap-1">
                   <button 
                     onClick={() => setEditingEvent(event)}
-                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                    className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                   >
                     <Edit2 size={16} />
                   </button>
@@ -890,7 +914,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                     <div className="flex items-center justify-end gap-2">
                       <button 
                         onClick={() => setEditingFinance(transaction)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                       >
                         <Edit2 size={16} />
                       </button>
@@ -930,7 +954,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
             <button className="btn-secondary px-4 py-2 flex items-center gap-2 text-sm">
               <ArrowUpRight size={16} /> Exportar Relatório
             </button>
-            <button className="btn-primary px-4 py-2 flex items-center gap-2 text-sm">
+            <button className="primary-gradient text-white px-4 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2 text-sm">
               <Plus size={16} /> Novo Registro
             </button>
           </div>
@@ -954,7 +978,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
                 onClick={() => setActiveView(item.id as AdminView)}
                 className={`flex items-center gap-2 py-4 border-b-2 transition-all text-sm font-medium whitespace-nowrap ${
                   activeView === item.id 
-                    ? 'border-indigo-600 text-indigo-600' 
+                    ? 'border-primary text-primary' 
                     : 'border-transparent text-slate-500 hover:text-slate-900'
                 }`}
               >
@@ -971,7 +995,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         <div className="max-w-7xl mx-auto">
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-4">
-              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
               <p className="text-slate-500 font-medium animate-pulse">Carregando dados administrativos...</p>
             </div>
           ) : (
@@ -996,7 +1020,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         </div>
       </main>
       {/* Modals */}
-      <AddMemberModal
+      <MemberModal
         isOpen={isAddingMember}
         onClose={() => setIsAddingMember(false)}
         churchId={churchId}
@@ -1014,7 +1038,7 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         onSuccess={() => showToast(editingMinistry ? 'Ministério atualizado com sucesso!' : 'Ministério criado com sucesso!')}
         onError={(msg) => showToast(msg, 'error')}
       />
-      <AddCellModal 
+      <CellModal 
         isOpen={isAddingCell || !!editingCell} 
         onClose={() => {
           setIsAddingCell(false);
@@ -1022,7 +1046,18 @@ export default function ChurchAdmin({ churchId, userRole }: ChurchAdminProps) {
         }} 
         churchId={churchId} 
         item={editingCell}
-        onSuccess={() => showToast(editingCell ? 'Célula atualizada com sucesso!' : 'Célula criada com sucesso!')}
+        onSuccess={() => { showToast(editingCell ? 'Célula atualizada com sucesso!' : 'Célula criada com sucesso!'); setIsAddingCell(false); setEditingCell(undefined); }}
+        onError={(msg) => showToast(msg, 'error')}
+      />
+      <MemberModal 
+        isOpen={!!memberToEdit} 
+        onClose={() => setMemberToEdit(null)} 
+        churchId={churchId} 
+        item={memberToEdit || undefined}
+        onSuccess={() => {
+          setMemberToEdit(null);
+          showToast('Membro atualizado com sucesso!', 'success');
+        }}
         onError={(msg) => showToast(msg, 'error')}
       />
       <AddEventModal 

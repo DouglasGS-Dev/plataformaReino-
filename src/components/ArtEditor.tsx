@@ -21,7 +21,7 @@ export const ArtEditor: React.FC<ArtEditorProps> = ({ imageUrl, onSave, onClose,
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="relative max-w-full max-h-full aspect-square bg-slate-800 rounded-lg overflow-hidden shadow-2xl">
           <img src={imageUrl} alt="Edit" className="w-full h-full object-contain" />
-          <div className="absolute inset-0 pointer-events-none border-2 border-indigo-500/50" />
+          <div className="absolute inset-0 pointer-events-none border-2 border-primary/50" />
         </div>
       </div>
 
@@ -40,7 +40,7 @@ export const ArtEditor: React.FC<ArtEditorProps> = ({ imageUrl, onSave, onClose,
         
         <button
           onClick={() => onSave(imageUrl)}
-          className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700"
+          className="btn-primary px-8 py-3"
         >
           Salvar Arte
         </button>

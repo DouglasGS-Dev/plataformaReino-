@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 const COLORS = [
-  { name: 'Índigo', value: '#4F46E5', class: 'bg-indigo-600' },
+  { name: 'Roxo', value: '#8b5cf6', class: 'bg-primary' },
   { name: 'Azul', value: '#0284C7', class: 'bg-sky-600' },
   { name: 'Verde', value: '#16A34A', class: 'bg-green-600' },
   { name: 'Vermelho', value: '#DC2626', class: 'bg-red-600' },
@@ -67,7 +67,7 @@ export default function RegisterChurch() {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-4rem)] bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-extrabold text-slate-900">
@@ -84,21 +84,21 @@ export default function RegisterChurch() {
         {step < 4 && (
           <div className="mb-8">
             <div className="flex items-center justify-between relative">
-              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-slate-200 rounded-full z-0"></div>
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-slate-100 rounded-full z-0"></div>
               <div 
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 h-1 bg-indigo-600 rounded-full z-0 transition-all duration-500"
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 h-1 primary-gradient rounded-full z-0 transition-all duration-500"
                 style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
               ></div>
               
               {steps.map((s) => (
                 <div key={s.id} className="relative z-10 flex flex-col items-center">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors duration-300 ${
-                    step >= s.id ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-slate-400'
+                    step >= s.id ? 'primary-gradient border-transparent text-white' : 'bg-white border-slate-200 text-slate-400'
                   }`}>
                     <s.icon className="w-5 h-5" />
                   </div>
                   <span className={`absolute -bottom-6 text-xs font-medium whitespace-nowrap ${
-                    step >= s.id ? 'text-indigo-600' : 'text-slate-500'
+                    step >= s.id ? 'text-primary' : 'text-slate-500'
                   }`}>
                     {s.title}
                   </span>
@@ -109,7 +109,7 @@ export default function RegisterChurch() {
         )}
 
         {/* Form Card */}
-        <div className="bg-white py-8 px-4 shadow-xl shadow-slate-200/50 sm:rounded-2xl sm:px-10 border border-slate-100 mt-12">
+        <div className="bg-white py-8 px-4 shadow-xl shadow-slate-100/50 sm:rounded-2xl sm:px-10 border border-slate-100 mt-12">
           <AnimatePresence mode="wait">
             {/* STEP 1: CHURCH INFO */}
             {step === 1 && (
@@ -128,7 +128,7 @@ export default function RegisterChurch() {
                       value={formData.churchName}
                       onChange={(e) => updateForm('churchName', e.target.value)}
                       placeholder="Ex: Igreja Batista Central"
-                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                     />
                   </div>
                 </div>
@@ -139,7 +139,7 @@ export default function RegisterChurch() {
                     <select
                       value={formData.membersCount}
                       onChange={(e) => updateForm('membersCount', e.target.value)}
-                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white"
+                      className="appearance-none block w-full px-3 py-3 border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-white"
                     >
                       <option value="">Selecione uma opção</option>
                       <option value="1-50">1 a 50 membros</option>
@@ -159,7 +159,7 @@ export default function RegisterChurch() {
                       value={formData.phone}
                       onChange={(e) => updateForm('phone', e.target.value)}
                       placeholder="(00) 00000-0000"
-                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                     />
                   </div>
                 </div>
@@ -183,7 +183,7 @@ export default function RegisterChurch() {
                       value={formData.adminName}
                       onChange={(e) => updateForm('adminName', e.target.value)}
                       placeholder="Ex: Pr. João Silva"
-                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                     />
                   </div>
                 </div>
@@ -196,7 +196,7 @@ export default function RegisterChurch() {
                       value={formData.email}
                       onChange={(e) => updateForm('email', e.target.value)}
                       placeholder="seu@email.com"
-                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                     />
                   </div>
                 </div>
@@ -209,7 +209,7 @@ export default function RegisterChurch() {
                       value={formData.password}
                       onChange={(e) => updateForm('password', e.target.value)}
                       placeholder="••••••••"
-                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                     />
                   </div>
                 </div>
@@ -225,11 +225,11 @@ export default function RegisterChurch() {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-6"
               >
-                <div className="bg-indigo-50 p-4 rounded-xl flex gap-4 items-start mb-6">
-                  <Smartphone className="w-6 h-6 text-indigo-600 shrink-0 mt-1" />
+                <div className="bg-primary-50 p-4 rounded-xl flex gap-4 items-start mb-6">
+                  <Smartphone className="w-6 h-6 text-primary shrink-0 mt-1" />
                   <div>
-                    <h4 className="text-sm font-semibold text-indigo-900">Seu próprio aplicativo</h4>
-                    <p className="text-sm text-indigo-700 mt-1">
+                    <h4 className="text-sm font-semibold text-primary">Seu próprio aplicativo</h4>
+                    <p className="text-sm text-primary/80 mt-1">
                       Personalize como o aplicativo aparecerá para os membros da sua igreja.
                     </p>
                   </div>
@@ -243,7 +243,7 @@ export default function RegisterChurch() {
                       value={formData.appName}
                       onChange={(e) => updateForm('appName', e.target.value)}
                       placeholder={formData.churchName || "Ex: App IBC"}
-                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="appearance-none block w-full px-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                     />
                   </div>
                   <p className="mt-2 text-xs text-slate-500">Este é o nome que aparecerá abaixo do ícone no celular.</p>
@@ -258,7 +258,7 @@ export default function RegisterChurch() {
                         type="button"
                         onClick={() => updateForm('primaryColor', color.value)}
                         className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform ${color.class} ${
-                          formData.primaryColor === color.value ? 'ring-4 ring-offset-2 ring-indigo-200 scale-110' : 'hover:scale-110'
+                          formData.primaryColor === color.value ? 'ring-4 ring-offset-2 ring-primary-200 scale-110' : 'hover:scale-110'
                         }`}
                         title={color.name}
                       >
@@ -287,8 +287,8 @@ export default function RegisterChurch() {
                 </p>
                 
                 <button
-                  onClick={() => navigate('/admin')}
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  onClick={() => navigate('/church-admin')}
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white primary-gradient hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
                 >
                   Acessar Painel Administrativo
                 </button>
@@ -315,7 +315,7 @@ export default function RegisterChurch() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="flex items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="flex items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white primary-gradient hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
                 >
                   Próximo
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -325,7 +325,7 @@ export default function RegisterChurch() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-70"
+                  className="flex items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white primary-gradient hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <>
@@ -347,7 +347,7 @@ export default function RegisterChurch() {
         {step < 4 && (
           <p className="mt-6 text-center text-sm text-slate-500">
             Já possui uma conta?{' '}
-            <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link to="/church-login" className="font-medium text-primary hover:text-primary/80">
               Faça login
             </Link>
           </p>

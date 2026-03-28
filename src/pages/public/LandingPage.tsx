@@ -7,8 +7,8 @@ export default function LandingPage() {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-slate-50 pt-24 pb-32">
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/church/1920/1080?blur=10')] bg-cover bg-center opacity-10" />
+      <section className="relative overflow-hidden bg-white pt-24 pb-32">
+        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/church/1920/1080?blur=10')] bg-cover bg-center opacity-5" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
@@ -16,7 +16,7 @@ export default function LandingPage() {
             className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8"
           >
             O Ecossistema Digital da <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+            <span className="primary-gradient-text">
               Sua Igreja
             </span>
           </motion.h1>
@@ -35,14 +35,14 @@ export default function LandingPage() {
             transition={{ delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Link to="/register" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all">
+            <Link to="/register" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-xl text-white primary-gradient shadow-lg hover:shadow-xl transition-all">
               Começar Agora
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
             <Link to="/app" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-xl text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 shadow-sm transition-all">
               Ver App do Membro
             </Link>
-            <Link to="/church-login" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-xl text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 shadow-sm transition-all">
+            <Link to="/church-login" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-xl text-primary bg-primary-50 border border-primary-100 hover:bg-primary-100 shadow-sm transition-all">
               Login Administrativo
             </Link>
           </motion.div>
@@ -72,10 +72,10 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-md transition-shadow"
+                className="p-6 rounded-2xl bg-white border border-slate-100 hover:shadow-md transition-shadow"
               >
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center mb-6">
-                  <feature.icon className="w-6 h-6 text-indigo-600" />
+                <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center mb-6">
+                  <feature.icon className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900 mb-3">{feature.title}</h3>
                 <p className="text-slate-600 leading-relaxed">{feature.desc}</p>

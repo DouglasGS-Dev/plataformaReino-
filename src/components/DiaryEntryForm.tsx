@@ -14,9 +14,9 @@ interface DiaryEntryFormProps {
 
 const categoryOptions = [
   { id: 'Milagres', icon: Sparkles, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { id: 'Livramentos', icon: Shield, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
+  { id: 'Livramentos', icon: Shield, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
   { id: 'Desafios', icon: Mountain, color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200' },
-  { id: 'Propósitos', icon: Target, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  { id: 'Propósitos', icon: Target, color: 'text-primary', bg: 'bg-primary-50', border: 'border-primary-200' },
   { id: 'Pedidos de oração', icon: HandHeart, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-200' },
   { id: 'Orações respondidas', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200' },
   { id: 'Lições espirituais', icon: Lightbulb, color: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-200' },
@@ -275,7 +275,7 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
               {/* Media Upload Section */}
             <div className="mt-4">
               <div className="flex flex-wrap gap-2 mb-4">
-                <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer border-2 border-dashed ${selectedMedia.length > 0 ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-300 hover:bg-indigo-50'}`}>
+                <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer border-2 border-dashed ${selectedMedia.length > 0 ? 'bg-primary-50 border-primary-200 text-primary' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-primary-300 hover:bg-primary-50'}`}>
                   <ImageIcon size={18} />
                   <span>{selectedMedia.length > 0 ? `${selectedMedia.length} Mídias` : 'Adicionar Mídia'}</span>
                   <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileSelect} />
@@ -385,21 +385,21 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
                 </div>
               </div>
 
-              <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
+              <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white text-indigo-600 flex items-center justify-center shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white text-primary flex items-center justify-center shadow-sm">
                     <Megaphone size={20} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-indigo-900">Compartilhar com a Comunidade</h4>
-                    <p className="text-[10px] text-indigo-600">Torne este registro visível para outros membros da igreja.</p>
+                    <h4 className="text-sm font-bold text-primary-900">Compartilhar com a Comunidade</h4>
+                    <p className="text-[10px] text-primary">Torne este registro visível para outros membros da igreja.</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShareWithCommunity(!shareWithCommunity)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                    shareWithCommunity ? 'bg-indigo-600' : 'bg-slate-300'
+                    shareWithCommunity ? 'bg-primary' : 'bg-slate-300'
                   }`}
                 >
                   <span

@@ -41,6 +41,23 @@
         "content": { "type": "string", "description": "The main content of the post" },
         "type": { "type": "string", "enum": ["prayer", "testimony", "announcement"], "description": "The type of the post" },
         "likesCount": { "type": "number", "description": "The number of likes on the post" },
+        "commentsCount": { "type": "number", "description": "The number of comments on the post" },
+        "media": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "url": { "type": "string" },
+              "type": { "type": "string", "enum": ["image", "video"] },
+              "objectFit": { "type": "string", "enum": ["cover", "contain"] },
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "size": { "type": "number" }
+            }
+          },
+          "description": "List of media items (images or videos) attached to the post"
+        },
+        "aspectRatio": { "type": "string", "enum": ["1:1", "4:5", "16:9", "9:16"], "description": "The aspect ratio for media display" },
         "createdAt": { "type": "timestamp", "description": "When the post was created" }
       },
       "required": ["id", "churchId", "authorId", "authorName", "content", "type", "likesCount", "createdAt"]
@@ -195,22 +212,53 @@
       },
       "required": ["churchId", "ministryId", "eventId", "eventTitle", "date", "roles", "createdAt"]
     },
+    "EBDTrack": {
+      "title": "EBD Track",
+      "description": "A growth track containing multiple courses.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The track's unique ID" },
+        "name": { "type": "string", "description": "The name of the track" },
+        "description": { "type": "string", "description": "The description of the track" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "createdAt": { "type": "timestamp", "description": "When the track was created" },
+        "order": { "type": "number", "description": "The order of the track" }
+      },
+      "required": ["id", "name", "churchId", "createdAt", "order"]
+    },
+    "EBDCourse": {
+      "title": "EBD Course",
+      "description": "A course within a growth track.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The course's unique ID" },
+        "trackId": { "type": "string", "description": "The ID of the track" },
+        "name": { "type": "string", "description": "The name of the course" },
+        "description": { "type": "string", "description": "The description of the course" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "createdAt": { "type": "timestamp", "description": "When the course was created" },
+        "order": { "type": "number", "description": "The order of the course" }
+      },
+      "required": ["id", "trackId", "name", "churchId", "createdAt", "order"]
+    },
     "EBDClass": {
       "title": "EBDClass",
-      "description": "An EBD (Escola Bíblica Dominical) class",
+      "description": "An EBD (Escola Bíblica Dominical) class within a course.",
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "The class's unique ID" },
+        "courseId": { "type": "string", "description": "The ID of the course" },
         "churchId": { "type": "string", "description": "The ID of the church" },
         "name": { "type": "string", "description": "The name of the class" },
         "teacherId": { "type": "string", "description": "The ID of the teacher" },
         "teacherName": { "type": "string", "description": "The name of the teacher" },
         "category": { "type": "string", "description": "The category of the class" },
         "description": { "type": "string", "description": "The description of the class" },
-        "studentCount": { "type": "number", "description": "The number of students in the class" },
-        "createdAt": { "type": "timestamp", "description": "When the class was created" }
+        "thumbnailUrl": { "type": "string", "description": "The thumbnail URL of the class" },
+        "createdAt": { "type": "timestamp", "description": "When the class was created" },
+        "order": { "type": "number", "description": "The order of the class" }
       },
-      "required": ["id", "churchId", "name", "teacherId", "teacherName", "createdAt"]
+      "required": ["id", "courseId", "churchId", "name", "teacherId", "teacherName", "createdAt", "order"]
     },
     "EBDLesson": {
       "title": "EBD Lesson",
@@ -222,6 +270,7 @@
         "title": { "type": "string", "description": "The title of the lesson" },
         "content": { "type": "string", "description": "The content of the lesson (Markdown)" },
         "videoUrl": { "type": "string", "description": "The URL of the lesson's video" },
+        "duration": { "type": "string", "description": "The duration of the lesson" },
         "order": { "type": "number", "description": "The order of the lesson in the class" },
         "createdAt": { "type": "timestamp", "description": "When the lesson was created" }
       },
@@ -229,30 +278,22 @@
     },
     "EBDEnrollment": {
       "title": "EBD Enrollment",
-      "description": "A student's enrollment in an EBD class.",
+      "description": "A student's enrollment in an EBD track, course, or class.",
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "The enrollment's unique ID" },
-        "classId": { "type": "string", "description": "The ID of the EBD class" },
-        "studentId": { "type": "string", "description": "The ID of the student" },
+        "userId": { "type": "string", "description": "The ID of the student" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "trackId": { "type": "string", "description": "The ID of the track (optional)" },
+        "courseId": { "type": "string", "description": "The ID of the course (optional)" },
+        "classId": { "type": "string", "description": "The ID of the class (optional)" },
         "status": { "type": "string", "enum": ["active", "completed"], "description": "The status of the enrollment" },
         "progress": { "type": "number", "description": "The percentage of completion" },
-        "enrolledAt": { "type": "timestamp", "description": "When the student enrolled" }
+        "completedLessons": { "type": "array", "items": { "type": "string" }, "description": "Array of lesson IDs" },
+        "enrolledAt": { "type": "timestamp", "description": "When the student enrolled" },
+        "updatedAt": { "type": "timestamp", "description": "When the enrollment was last updated" }
       },
-      "required": ["id", "classId", "studentId", "status", "progress", "enrolledAt"]
-    },
-    "EBDProgress": {
-      "title": "EBD Progress",
-      "description": "A student's progress in a specific lesson.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "description": "The progress record's unique ID" },
-        "enrollmentId": { "type": "string", "description": "The ID of the enrollment" },
-        "lessonId": { "type": "string", "description": "The ID of the lesson" },
-        "completed": { "type": "boolean", "description": "Whether the lesson is completed" },
-        "completedAt": { "type": "timestamp", "description": "When the lesson was completed" }
-      },
-      "required": ["id", "enrollmentId", "lessonId", "completed"]
+      "required": ["id", "userId", "churchId", "status", "progress", "enrolledAt", "updatedAt"]
     },
     "MarketplaceItem": {
       "title": "MarketplaceItem",
@@ -291,6 +332,22 @@
         "createdAt": { "type": "timestamp", "description": "When the record was created" }
       },
       "required": ["id", "churchId", "name", "visitDate", "status", "createdAt"]
+    },
+    "CellChatMessage": {
+      "title": "CellChatMessage",
+      "description": "A message within a cell's chat",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The message's unique ID" },
+        "cellId": { "type": "string", "description": "The ID of the cell" },
+        "authorId": { "type": "string", "description": "The ID of the user who sent the message" },
+        "authorName": { "type": "string", "description": "The name of the author" },
+        "authorPhoto": { "type": "string", "description": "The photo URL of the author" },
+        "content": { "type": "string", "description": "The message content" },
+        "type": { "type": "string", "enum": ["text", "image", "system"], "description": "The type of message" },
+        "createdAt": { "type": "timestamp", "description": "When the message was sent" }
+      },
+      "required": ["id", "cellId", "authorId", "authorName", "content", "type", "createdAt"]
     }
   },
   "firestore": {
@@ -342,9 +399,17 @@
       "schema": { "$ref": "#/entities/Schedule" },
       "description": "Stores schedules for all churches"
     },
-    "/ebd_classes/{classId}": {
+    "/ebd_tracks/{trackId}": {
+      "schema": { "$ref": "#/entities/EBDTrack" },
+      "description": "Stores EBD growth tracks for all churches"
+    },
+    "/ebd_tracks/{trackId}/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/EBDCourse" },
+      "description": "Stores EBD courses within a track"
+    },
+    "/ebd_courses/{courseId}/classes/{classId}": {
       "schema": { "$ref": "#/entities/EBDClass" },
-      "description": "Stores EBD classes for all churches"
+      "description": "Stores EBD classes within a course"
     },
     "/ebd_classes/{classId}/lessons/{lessonId}": {
       "schema": { "$ref": "#/entities/EBDLesson" },
@@ -352,11 +417,7 @@
     },
     "/ebd_enrollments/{enrollmentId}": {
       "schema": { "$ref": "#/entities/EBDEnrollment" },
-      "description": "Stores student enrollments in EBD classes"
-    },
-    "/ebd_enrollments/{enrollmentId}/progress/{progressId}": {
-      "schema": { "$ref": "#/entities/EBDProgress" },
-      "description": "Stores progress for each lesson in an enrollment"
+      "description": "Stores student enrollments in EBD tracks, courses, or classes"
     },
     "/marketplace_items/{itemId}": {
       "schema": { "$ref": "#/entities/MarketplaceItem" },
@@ -365,6 +426,10 @@
     "/visitors/{visitorId}": {
       "schema": { "$ref": "#/entities/Visitor" },
       "description": "Stores visitor records for the church"
+    },
+    "/cells/{cellId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/CellChatMessage" },
+      "description": "Stores chat messages for a specific cell"
     }
   }
 }

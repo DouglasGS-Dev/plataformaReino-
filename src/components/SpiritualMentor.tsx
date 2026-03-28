@@ -44,7 +44,7 @@ const SpiritualMentor: React.FC<SpiritualMentorProps> = ({ entries, devotionalSt
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="p-4 border-bottom border-slate-100 bg-slate-50 flex items-center gap-3">
-        <div className="p-2 bg-indigo-600 text-white rounded-lg">
+        <div className="p-2 bg-primary text-white rounded-lg">
           <Bot size={20} />
         </div>
         <div>
@@ -64,7 +64,7 @@ const SpiritualMentor: React.FC<SpiritualMentorProps> = ({ entries, devotionalSt
             <div className={`max-w-[80%] p-4 rounded-2xl relative group ${
               msg.role === 'bot' 
                 ? 'bg-slate-100 text-slate-800 rounded-tl-none' 
-                : 'bg-indigo-600 text-white rounded-tr-none'
+                : 'bg-primary text-white rounded-tr-none'
             }`}>
               <p className="text-sm leading-relaxed">{msg.text}</p>
               
@@ -72,11 +72,11 @@ const SpiritualMentor: React.FC<SpiritualMentorProps> = ({ entries, devotionalSt
                 <button
                   onClick={() => handleSaveToDiary(msg.text, i)}
                   disabled={isSaving === i}
-                  className="absolute -right-10 top-0 p-2 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                  className="absolute -right-10 top-0 p-2 text-slate-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
                   title="Salvar no Diário"
                 >
                   {isSaving === i ? (
-                    <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                   ) : (
                     <Star size={16} />
                   )}
@@ -95,11 +95,11 @@ const SpiritualMentor: React.FC<SpiritualMentorProps> = ({ entries, devotionalSt
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Digite sua dúvida ou reflexão..."
-            className="w-full pl-4 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="w-full pl-4 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all"
           />
           <button
             onClick={handleSend}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
           >
             <Send size={20} />
           </button>

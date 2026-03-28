@@ -13,8 +13,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     {
       title: "Bem-vindo ao seu Diário Espiritual",
       description: "Um espaço sagrado para registrar sua caminhada com Deus, suas orações e aprendizados.",
-      icon: <Mountain size={48} className="text-indigo-600" />,
-      color: "bg-indigo-50"
+      icon: <Mountain size={48} className="text-primary" />,
+      color: "bg-primary/10"
     },
     {
       title: "Crescimento Constante",

@@ -81,7 +81,7 @@ export default function AppSchedules() {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : mySchedules.length > 0 ? (
         <div className="space-y-4">
@@ -96,12 +96,12 @@ export default function AppSchedules() {
                 animate={{ opacity: 1, x: 0 }}
                 className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm relative overflow-hidden"
               >
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-600" />
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
                 
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-bold text-lg text-slate-900">{schedule.eventTitle}</h3>
-                    <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm mt-1">
+                    <div className="flex items-center gap-2 text-primary font-bold text-sm mt-1">
                       <CheckCircle2 className="w-4 h-4" />
                       {myRole?.roleName}
                     </div>
@@ -152,14 +152,14 @@ export default function AppSchedules() {
         </div>
       )}
 
-      <div className="mt-8 p-6 bg-indigo-50 rounded-3xl border border-indigo-100">
+      <div className="mt-8 p-6 bg-primary-50 rounded-3xl border border-primary-100">
         <div className="flex gap-4">
-          <div className="w-10 h-10 bg-indigo-100 rounded-2xl flex items-center justify-center shrink-0">
-            <AlertCircle className="w-6 h-6 text-indigo-600" />
+          <div className="w-10 h-10 bg-primary-100 rounded-2xl flex items-center justify-center shrink-0">
+            <AlertCircle className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h4 className="font-bold text-indigo-900 text-sm">Aviso Importante</h4>
-            <p className="text-indigo-700 text-xs mt-1 leading-relaxed">
+            <h4 className="font-bold text-primary-900 text-sm">Aviso Importante</h4>
+            <p className="text-primary-700 text-xs mt-1 leading-relaxed">
               Caso não possa comparecer ao seu compromisso, por favor avise seu líder de ministério com pelo menos 48h de antecedência.
             </p>
           </div>

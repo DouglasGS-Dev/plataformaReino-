@@ -155,7 +155,7 @@ export default function DevotionalPage() {
           </div>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-primary-50 text-primary rounded-xl flex items-center justify-center">
             <CheckCircle2 size={24} />
           </div>
           <div>
@@ -177,11 +177,11 @@ export default function DevotionalPage() {
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-8 md:p-12 space-y-8">
           <div className="relative">
-            <Quote className="absolute -top-6 -left-6 text-indigo-100 w-16 h-16 -z-10" />
+            <Quote className="absolute -top-6 -left-6 text-primary-100 w-16 h-16 -z-10" />
             <blockquote className="text-2xl md:text-3xl font-serif italic text-slate-800 leading-relaxed">
               "Lâmpada para os meus pés é tua palavra, e luz para o meu caminho."
             </blockquote>
-            <cite className="block mt-4 text-indigo-600 font-bold not-italic tracking-wide">
+            <cite className="block mt-4 text-primary font-bold not-italic tracking-wide">
               — Salmos 119:105
             </cite>
           </div>
@@ -207,7 +207,7 @@ export default function DevotionalPage() {
               className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold transition-all shadow-lg ${
                 stats.lastDate === new Date().toDateString()
                   ? 'bg-emerald-500 text-white shadow-emerald-200'
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
+                  : 'bg-primary text-white hover:opacity-90 shadow-primary/20'
               }`}
             >
               <CheckCircle2 size={20} /> 
@@ -217,10 +217,10 @@ export default function DevotionalPage() {
         </div>
       </div>
 
-      <div className="bg-indigo-900 rounded-3xl p-8 text-white relative overflow-hidden">
+      <div className="bg-primary-900 rounded-3xl p-8 text-white relative overflow-hidden">
         <div className="relative z-10 space-y-4">
           <h3 className="text-xl font-bold">Próximo Passo</h3>
-          <p className="text-indigo-100 max-w-md">
+          <p className="text-primary-100 max-w-md">
             Que tal conversar com seu Mentor Espiritual sobre o que você aprendeu hoje?
           </p>
           <button className="flex items-center gap-2 text-white font-bold group">

@@ -138,7 +138,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
         {/* Header/Cover */}
-        <div className="h-32 bg-gradient-to-r from-indigo-500 to-purple-600 relative">
+        <div className="h-32 primary-gradient relative">
           <div className="absolute -bottom-12 left-8">
             <div className="relative group">
               {(isEditing ? formData.photoURL : profile.photoURL) ? (
@@ -188,7 +188,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
               <p className="text-slate-500 flex items-center gap-2">
                 <Mail size={14} /> {profile.email}
               </p>
-              <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 capitalize">
+              <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
                 {profile.role}
               </div>
             </div>
@@ -229,7 +229,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                       name="displayName"
                       value={formData.displayName}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                       placeholder="Seu nome"
                     />
                   </div>
@@ -240,7 +240,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-dashed border-slate-300 hover:border-indigo-500 hover:bg-slate-50 transition-all text-slate-600 hover:text-indigo-600 font-medium"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-dashed border-slate-300 hover:border-primary hover:bg-primary/5 transition-all text-slate-600 hover:text-primary font-medium"
                     >
                       {isUploading ? (
                         <Loader2 size={18} className="animate-spin" />
@@ -258,7 +258,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                       placeholder="(00) 00000-0000"
                     />
                   </div>
@@ -270,7 +270,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                       name="birthDate"
                       value={formData.birthDate}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                     />
                   </div>
 
@@ -281,7 +281,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                       name="ministry"
                       value={formData.ministry}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                       placeholder="Ex: Louvor, Jovens..."
                     />
                   </div>
@@ -294,7 +294,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                     value={formData.bio}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
                     placeholder="Conte um pouco sobre você..."
                   />
                 </div>
@@ -309,7 +309,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                         name="social.instagram"
                         value={formData.socialLinks?.instagram}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                         placeholder="@usuario"
                       />
                     </div>
@@ -320,7 +320,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                         name="social.facebook"
                         value={formData.socialLinks?.facebook}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                         placeholder="facebook.com/..."
                       />
                     </div>
@@ -331,7 +331,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                         name="social.whatsapp"
                         value={formData.socialLinks?.whatsapp}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                         placeholder="WhatsApp"
                       />
                     </div>
@@ -402,7 +402,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
                         </a>
                       )}
                       {profile.socialLinks?.facebook && (
-                        <a href={profile.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:scale-110 transition-transform">
+                        <a href={profile.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center hover:scale-110 transition-transform">
                           <Facebook size={20} />
                         </a>
                       )}

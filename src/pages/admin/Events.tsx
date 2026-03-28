@@ -49,14 +49,14 @@ export default function Events() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Eventos</h2>
           <p className="text-slate-500 mt-1">Organize cultos, conferências e atividades da igreja.</p>
         </div>
         <button 
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+          className="w-full md:w-auto flex items-center justify-center px-4 py-2 primary-gradient text-white rounded-lg hover:opacity-90 transition-all shadow-sm"
         >
           <Plus className="w-5 h-5 mr-2" />
           Novo Evento
@@ -70,7 +70,7 @@ export default function Events() {
             <input 
               type="text" 
               placeholder="Buscar por título, local ou categoria..." 
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -83,28 +83,28 @@ export default function Events() {
         <div className="p-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               <p className="text-slate-500 text-sm">Carregando eventos...</p>
             </div>
           ) : filteredEvents.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {filteredEvents.map((event) => (
-                <div key={event.id} className="flex flex-col sm:flex-row bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 hover:shadow-md transition-all group">
+                <div key={event.id} className="flex flex-col sm:flex-row bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-primary/30 hover:shadow-md transition-all group">
                   <div className="sm:w-48 h-48 sm:h-auto bg-slate-100 relative overflow-hidden">
                     <div className="absolute inset-0 flex items-center justify-center text-slate-300">
                       <CalendarIcon size={48} />
                     </div>
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-indigo-600 uppercase tracking-wider shadow-sm">
+                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-primary uppercase tracking-wider shadow-sm">
                       {event.category}
                     </div>
                   </div>
                   
                   <div className="flex-1 p-5 relative">
-                    <button className="absolute top-4 right-4 text-slate-400 hover:text-indigo-600 transition-colors p-1 rounded-lg hover:bg-slate-50">
+                    <button className="absolute top-4 right-4 text-slate-400 hover:text-primary transition-colors p-1 rounded-lg hover:bg-slate-50">
                       <MoreVertical className="w-5 h-5" />
                     </button>
                     
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors mb-2 pr-8">{event.title}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors mb-2 pr-8">{event.title}</h3>
                     
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -126,7 +126,7 @@ export default function Events() {
                         <Users size={14} />
                         <span>Inscrições abertas</span>
                       </div>
-                      <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+                      <button className="text-sm font-semibold text-primary hover:text-primary-700 transition-colors">
                         Gerenciar
                       </button>
                     </div>

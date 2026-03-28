@@ -15,9 +15,9 @@ const DiaryEntryForm = lazy(() => import('../../components/DiaryEntryForm'));
 
 const categoryOptions = [
   { id: 'Milagres', icon: Sparkles, color: 'text-amber-500', bg: 'bg-amber-50' },
-  { id: 'Livramentos', icon: Shield, color: 'text-blue-500', bg: 'bg-blue-50' },
+  { id: 'Livramentos', icon: Shield, color: 'text-primary', bg: 'bg-primary/10' },
   { id: 'Desafios', icon: Mountain, color: 'text-slate-500', bg: 'bg-slate-50' },
-  { id: 'Propósitos', icon: Target, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+  { id: 'Propósitos', icon: Target, color: 'text-primary', bg: 'bg-primary-50' },
   { id: 'Pedidos de oração', icon: HandHeart, color: 'text-rose-500', bg: 'bg-rose-50' },
   { id: 'Orações respondidas', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
   { id: 'Lições espirituais', icon: Lightbulb, color: 'text-yellow-500', bg: 'bg-yellow-50' },
@@ -142,7 +142,7 @@ export default function Diary() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
-        <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mb-6">
+        <div className="w-20 h-20 bg-primary-50 text-primary rounded-full flex items-center justify-center mb-6">
           <PenTool size={40} />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Seu Diário Espiritual</h2>
@@ -188,7 +188,7 @@ export default function Diary() {
             setEditingEntry(undefined);
             setIsFormOpen(true);
           }}
-          className="btn-primary flex items-center justify-center gap-2 px-6 py-3"
+          className="w-full md:w-auto btn-primary flex items-center justify-center gap-2 px-6 py-3"
         >
           <Plus size={20} /> Novo Registro
         </button>
@@ -220,7 +220,7 @@ export default function Diary() {
           placeholder="Buscar nos seus registros..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm"
+          className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-white focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm"
         />
       </div>
 
@@ -247,14 +247,14 @@ export default function Diary() {
               }}
             >
               <div className="flex justify-between items-start mb-4">
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-wider rounded-full border border-indigo-100">
+                <span className="px-3 py-1 bg-primary-50 text-primary text-[10px] font-bold uppercase tracking-wider rounded-full border border-primary-100">
                   {entry.category}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">
                   {new Date(entry.id).toLocaleDateString('pt-BR')}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">
                 {entry.title}
               </h3>
               <p className="text-slate-600 text-sm line-clamp-3 leading-relaxed">

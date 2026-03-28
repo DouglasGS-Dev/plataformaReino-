@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Users, MapPin, Calendar, Clock, Search, ChevronRight, User as UserIcon, MessageCircle, Navigation } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Users, MapPin, Calendar, Clock, Search, ChevronRight, User as UserIcon, MessageCircle, Navigation, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
+import CellChat from '../../components/CellChat';
 
 interface Cell {
   id: string;
@@ -14,6 +15,7 @@ interface Cell {
   dayOfWeek: string;
   time: string;
   membersCount: number;
+  members?: string[];
   description?: string;
   neighborhood?: string;
 }
@@ -24,6 +26,7 @@ export default function Cells() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCell, setSelectedCell] = useState<Cell | null>(null);
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     if (!churchId) return;
@@ -47,21 +50,29 @@ export default function Cells() {
     (cell.neighborhood && cell.neighborhood.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const isMember = selectedCell && auth.currentUser && (
+    selectedCell.leaderId === auth.currentUser.uid || 
+    (selectedCell.members && selectedCell.members.includes(auth.currentUser.uid))
+  );
+
   if (selectedCell) {
     return (
       <div className="space-y-6 pb-20">
         <button 
-          onClick={() => setSelectedCell(null)}
-          className="flex items-center text-indigo-600 font-medium"
+          onClick={() => {
+            setSelectedCell(null);
+            setShowChat(false);
+          }}
+          className="flex items-center text-primary font-medium"
         >
           <ChevronRight className="rotate-180 mr-1" size={20} />
           Voltar para Células
         </button>
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="h-40 bg-indigo-600 relative">
+          <div className="h-40 primary-gradient relative">
             <div className="absolute -bottom-10 left-6">
-              <div className="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center text-indigo-600 border-4 border-white">
+              <div className="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center text-primary border-4 border-white">
                 <Users size={40} />
               </div>
             </div>
@@ -110,16 +121,36 @@ export default function Cells() {
             </div>
 
             <div className="mt-8 flex gap-3">
-              <button className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                <MessageCircle size={20} />
-                Quero Participar
-              </button>
+              {isMember ? (
+                <button 
+                  onClick={() => setShowChat(true)}
+                  className="flex-1 py-4 primary-gradient text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                >
+                  <MessageCircle size={20} />
+                  Chat da Célula
+                </button>
+              ) : (
+                <button className="flex-1 py-4 primary-gradient text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                  <Users size={20} />
+                  Quero Participar
+                </button>
+              )}
               <button className="w-14 h-14 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-all">
                 <Navigation size={24} />
               </button>
             </div>
           </div>
         </div>
+
+        <AnimatePresence>
+          {showChat && (
+            <CellChat 
+              cellId={selectedCell.id} 
+              cellName={selectedCell.name} 
+              onClose={() => setShowChat(false)} 
+            />
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -138,7 +169,7 @@ export default function Cells() {
           placeholder="Buscar por bairro, líder ou nome..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none shadow-sm transition-all"
+          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none shadow-sm transition-all"
         />
       </div>
 
@@ -156,9 +187,9 @@ export default function Cells() {
               transition={{ delay: index * 0.05 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setSelectedCell(cell)}
-              className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer hover:border-indigo-300 transition-all"
+              className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer hover:border-primary/30 transition-all"
             >
-              <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
                 <Users size={28} />
               </div>
               <div className="flex-1 min-w-0">

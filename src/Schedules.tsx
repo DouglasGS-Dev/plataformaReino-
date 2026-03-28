@@ -12,7 +12,7 @@ import {
   deleteDoc,
   getDocs
 } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from './firebase';
 import { useOutletContext } from 'react-router-dom';
 import { 
   Calendar, 
@@ -172,15 +172,15 @@ export default function AdminSchedules() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-0 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Escalas</h1>
           <p className="text-slate-500">Organize as equipes para os eventos</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-colors"
+          className="w-full md:w-auto primary-gradient text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20"
         >
           <Plus className="w-5 h-5" />
           Nova Escala
@@ -189,7 +189,7 @@ export default function AdminSchedules() {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -251,7 +251,7 @@ export default function AdminSchedules() {
                     required
                     value={newSchedule.ministryId}
                     onChange={(e) => setNewSchedule({ ...newSchedule, ministryId: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   >
                     <option value="">Selecione um ministério</option>
                     {ministries.map(m => (
@@ -265,7 +265,7 @@ export default function AdminSchedules() {
                     required
                     value={newSchedule.eventId}
                     onChange={(e) => setNewSchedule({ ...newSchedule, eventId: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   >
                     <option value="">Selecione um evento</option>
                     {events.map(e => (
@@ -282,7 +282,7 @@ export default function AdminSchedules() {
                   type="datetime-local"
                   value={newSchedule.date}
                   onChange={(e) => setNewSchedule({ ...newSchedule, date: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 />
               </div>
 
@@ -292,7 +292,7 @@ export default function AdminSchedules() {
                   <button
                     type="button"
                     onClick={addRole}
-                    className="text-indigo-600 text-sm font-bold flex items-center gap-1 hover:text-indigo-700"
+                    className="text-primary text-sm font-bold flex items-center gap-1 hover:text-primary/80 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Adicionar Função
@@ -308,7 +308,7 @@ export default function AdminSchedules() {
                           type="text"
                           value={role.roleName}
                           onChange={(e) => updateRole(idx, 'roleName', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
                           placeholder="Ex: Recepcionista"
                         />
                       </div>
@@ -317,7 +317,7 @@ export default function AdminSchedules() {
                         <select
                           value={role.userId}
                           onChange={(e) => updateRole(idx, 'userId', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
                         >
                           <option value="">Selecione...</option>
                           {churchUsers.map(u => (
@@ -340,7 +340,7 @@ export default function AdminSchedules() {
               <div className="pt-4 sticky bottom-0 bg-white">
                 <button
                   type="submit"
-                  className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
+                  className="w-full primary-gradient text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
                 >
                   Salvar Escala
                 </button>

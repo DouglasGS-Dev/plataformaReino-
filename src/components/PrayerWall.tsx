@@ -175,7 +175,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
         </div>
         <button 
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-200"
+          className="w-full md:w-auto flex items-center justify-center gap-2 bg-primary hover:opacity-90 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-primary/20"
         >
           <Plus size={20} />
           Novo Pedido
@@ -188,7 +188,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
           onClick={() => setFilter('Todos')}
           className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
             filter === 'Todos' 
-              ? 'bg-indigo-600 text-white shadow-md' 
+              ? 'bg-primary text-white shadow-md' 
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-100'
           }`}
         >
@@ -200,7 +200,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
             onClick={() => setFilter(cat)}
             className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
               filter === cat 
-                ? 'bg-indigo-600 text-white shadow-md' 
+                ? 'bg-primary text-white shadow-md' 
                 : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-100'
             }`}
           >
@@ -242,7 +242,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                   <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                     prayer.status === 'answered' 
                       ? 'bg-emerald-100 text-emerald-700' 
-                      : 'bg-indigo-50 text-indigo-600'
+                      : 'bg-primary-50 text-primary'
                   }`}>
                     {prayer.status === 'answered' ? 'Oração Respondida' : prayer.category}
                   </span>
@@ -299,9 +299,9 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                         ) : (
                           <button
                             onClick={() => handleIntercede(prayer.id)}
-                            className="flex items-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                            className="flex items-center gap-2 bg-primary-50 text-primary hover:bg-primary-100 px-4 py-2 rounded-xl text-xs font-bold transition-all"
                           >
-                            <Heart size={14} className="group-hover:fill-indigo-600" />
+                            <Heart size={14} className="group-hover:fill-primary" />
                             {prayer.intercessorsCount > 0 ? `${prayer.intercessorsCount} Orando` : 'Vou Orar'}
                           </button>
                         )}
@@ -346,7 +346,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                     value={newPrayer.content}
                     onChange={(e) => setNewPrayer({...newPrayer, content: e.target.value})}
                     placeholder="Escreva aqui seu motivo de oração..."
-                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all min-h-[120px] resize-none"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all min-h-[120px] resize-none"
                   />
                 </div>
 
@@ -356,7 +356,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                     <select
                       value={newPrayer.category}
                       onChange={(e) => setNewPrayer({...newPrayer, category: e.target.value as any})}
-                      className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none bg-white"
+                      className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none appearance-none bg-white"
                     >
                       {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
@@ -386,7 +386,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
 
                 <button
                   type="submit"
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2"
+                  className="w-full bg-primary hover:opacity-90 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                 >
                   <Send size={20} />
                   Enviar Pedido

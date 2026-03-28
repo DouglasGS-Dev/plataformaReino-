@@ -56,18 +56,18 @@ export default function Ministries() {
       <div className="space-y-6 pb-20">
         <button 
           onClick={() => setSelectedMinistry(null)}
-          className="flex items-center text-indigo-600 font-medium"
+          className="flex items-center text-primary font-medium"
         >
           <ChevronRight className="rotate-180 mr-1" size={20} />
           Voltar para Ministérios
         </button>
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="h-40 bg-gradient-to-br from-indigo-600 to-violet-600 relative">
+          <div className="h-40 primary-gradient relative">
             <div className="absolute inset-0 bg-black/10" />
             <div className="absolute bottom-6 left-6 right-6 text-white">
               <h2 className="text-2xl font-bold">{selectedMinistry.name}</h2>
-              <p className="text-indigo-100 flex items-center gap-2 mt-1">
+              <p className="text-white/80 flex items-center gap-2 mt-1">
                 <ShieldCheck size={18} />
                 Líder: {selectedMinistry.leaderName}
               </p>
@@ -94,7 +94,7 @@ export default function Ministries() {
             </div>
 
             <div className="pt-4 flex flex-col gap-3">
-              <button className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2">
+              <button className="w-full py-4 primary-gradient text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
                 <Star size={20} />
                 Quero Servir neste Ministério
               </button>
@@ -119,15 +119,15 @@ export default function Ministries() {
       {/* My Scales / Schedules */}
       <section className="space-y-4">
         <h3 className="text-xl font-bold text-slate-900">Minha Escala</h3>
-        <div className="bg-indigo-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+        <div className="primary-gradient rounded-3xl p-6 text-white shadow-xl shadow-primary/20 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
-              <Calendar size={20} className="text-indigo-200" />
-              <span className="text-indigo-100 font-medium">Próximo Serviço</span>
+              <Calendar size={20} className="text-white/60" />
+              <span className="text-white/80 font-medium">Próximo Serviço</span>
             </div>
             <h4 className="text-2xl font-bold mb-1">Ministério de Louvor</h4>
-            <p className="text-indigo-100 opacity-90">Domingo, 22 de Março • 18:30</p>
+            <p className="text-white/90 opacity-90">Domingo, 22 de Março • 18:30</p>
             <div className="mt-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -135,7 +135,7 @@ export default function Ministries() {
                 </div>
                 <span className="text-sm font-medium">Vocal / Backing</span>
               </div>
-              <button className="px-4 py-2 bg-white text-indigo-600 rounded-xl text-sm font-bold">
+              <button className="px-4 py-2 bg-white text-primary rounded-xl text-sm font-bold">
                 Confirmar
               </button>
             </div>
@@ -151,7 +151,7 @@ export default function Ministries() {
           placeholder="Buscar ministérios..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm transition-all"
+          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none shadow-sm transition-all"
         />
       </div>
 
@@ -172,13 +172,13 @@ export default function Ministries() {
                 transition={{ delay: index * 0.05 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedMinistry(m)}
-                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer hover:border-indigo-300 transition-all group"
+                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer hover:border-primary/30 transition-all group"
               >
-                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all shrink-0">
                   <Briefcase size={28} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{m.name}</h4>
+                  <h4 className="font-bold text-slate-900 truncate group-hover:text-primary transition-colors">{m.name}</h4>
                   <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
                     <ShieldCheck size={12} />
                     Líder: {m.leaderName}
@@ -189,7 +189,7 @@ export default function Ministries() {
                     </span>
                   </div>
                 </div>
-                <ChevronRight size={20} className="text-slate-300 group-hover:text-indigo-400 transition-colors" />
+                <ChevronRight size={20} className="text-slate-300 group-hover:text-primary/40 transition-colors" />
               </motion.div>
             ))
           )}

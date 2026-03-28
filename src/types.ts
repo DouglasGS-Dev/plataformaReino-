@@ -41,16 +41,72 @@ export interface Church {
   address?: string;
 }
 
+export interface EBDTrack {
+  id: string;
+  name: string;
+  description: string;
+  churchId: string;
+  createdAt: any;
+  order: number;
+}
+
+export interface EBDCourse {
+  id: string;
+  trackId: string;
+  name: string;
+  description: string;
+  churchId: string;
+  createdAt: any;
+  order: number;
+}
+
 export interface EBDClass {
   id: string;
+  courseId: string;
   name: string;
   teacherId: string;
   teacherName: string;
   category: string;
   description: string;
-  studentCount: number;
+  thumbnailUrl?: string;
   churchId: string;
   createdAt: any;
+  order: number;
+}
+
+export interface EBDLesson {
+  id: string;
+  classId: string;
+  title: string;
+  content: string;
+  order: number;
+  videoUrl?: string;
+  duration?: string;
+  createdAt: any;
+}
+
+export interface EBDEnrollment {
+  id: string;
+  userId: string;
+  churchId: string;
+  trackId?: string;
+  courseId?: string;
+  classId?: string;
+  status: 'active' | 'completed';
+  progress: number; // 0-100
+  completedLessons: string[]; // Array of lesson IDs
+  enrolledAt: any;
+  updatedAt: any;
+}
+
+export interface EBDAttendance {
+  id: string;
+  classId: string;
+  date: string; // ISO date YYYY-MM-DD
+  presentStudents: string[]; // Array of user IDs
+  churchId: string;
+  createdAt: any;
+  updatedAt?: any;
 }
 
 export interface UserProfile {
@@ -59,6 +115,8 @@ export interface UserProfile {
   displayName?: string;
   photoURL?: string;
   role: 'admin' | 'user' | 'pastor' | 'leader';
+  status: 'active' | 'inactive' | 'visitor';
+  tags: string[];
   churchId?: string;
   bio?: string;
   phone?: string;
@@ -138,6 +196,18 @@ export interface MinistrySchedule {
   createdAt: any;
 }
 
+export interface CellReport {
+  id: string;
+  cellId: string;
+  date: any;
+  attendance: number;
+  visitors: number;
+  notes: string;
+  leaderId: string;
+  churchId: string;
+  createdAt: any;
+}
+
 export interface Cell {
   id: string;
   name: string;
@@ -152,6 +222,7 @@ export interface Cell {
   meetingTime?: string;
   churchId: string;
   createdAt: any;
+  reports?: CellReport[];
 }
 
 export interface Event {

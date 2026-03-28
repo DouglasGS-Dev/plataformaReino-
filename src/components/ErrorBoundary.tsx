@@ -48,7 +48,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => window.location.reload()}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all"
+                className="btn-primary flex-1 flex items-center justify-center gap-2 px-6 py-3"
               >
                 <RefreshCw size={18} /> Recarregar
               </button>

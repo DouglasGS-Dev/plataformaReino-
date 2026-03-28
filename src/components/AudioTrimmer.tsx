@@ -25,12 +25,12 @@ export const AudioTrimmer: React.FC<AudioTrimmerProps> = ({ file, url, onCancel,
               {Array.from({ length: 40 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex-1 bg-indigo-400 rounded-full"
+                  className="flex-1 bg-primary/60 rounded-full"
                   style={{ height: `${Math.random() * 100}%` }}
                 />
               ))}
             </div>
-            <div className="absolute inset-y-0 left-1/4 right-1/4 bg-indigo-500/20 border-x-2 border-indigo-500" />
+            <div className="absolute inset-y-0 left-1/4 right-1/4 bg-primary/20 border-x-2 border-primary" />
           </div>
 
           <div className="flex justify-center gap-4">
@@ -39,7 +39,7 @@ export const AudioTrimmer: React.FC<AudioTrimmerProps> = ({ file, url, onCancel,
             </button>
             <button
               onClick={() => onTrim(file)}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700"
+              className="btn-primary px-8 py-3"
             >
               Confirmar Corte
             </button>

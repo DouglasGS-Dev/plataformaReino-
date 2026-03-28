@@ -7,8 +7,8 @@ import {
   BarChart3, PieChart, Activity
 } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { SpiritualEntry, UserProfile } from '../../types';
+import { db, handleFirestoreError, OperationType } from '../firebase';
+import { SpiritualEntry, UserProfile } from '../types';
 import { User } from 'firebase/auth';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -76,12 +76,12 @@ export default function DashboardPage() {
     return data;
   }, [entries]);
 
-  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#64748b'];
+  const COLORS = ['#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe', '#6d28d9', '#5b21b6', '#4c1d95'];
 
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
-        <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mb-6">
+        <div className="w-20 h-20 bg-primary-50 text-primary rounded-full flex items-center justify-center mb-6">
           <LayoutDashboard size={40} />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Seu Painel de Progresso</h2>
@@ -100,9 +100,9 @@ export default function DashboardPage() {
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+            <div className="p-3 bg-primary-50 text-primary rounded-2xl">
               <Calendar size={24} />
             </div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
@@ -111,7 +111,7 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-500 font-medium">Registros no diário</p>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl">
               <Flame size={24} />
@@ -122,7 +122,7 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-500 font-medium">Devocional diário</p>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-amber-50 text-amber-500 rounded-2xl">
               <Star size={24} />
@@ -133,7 +133,7 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-500 font-medium">Momentos marcantes</p>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-emerald-50 text-emerald-500 rounded-2xl">
               <Target size={24} />
@@ -146,9 +146,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+            <div className="p-2 bg-primary-50 text-primary rounded-lg">
               <BarChart3 size={20} />
             </div>
             <h3 className="text-lg font-bold text-slate-900">Atividade Mensal</h3>
@@ -163,15 +163,15 @@ export default function DashboardPage() {
                   cursor={{ fill: '#f8fafc' }}
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
-                <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+            <div className="p-2 bg-primary-50 text-primary rounded-lg">
               <PieChart size={20} />
             </div>
             <h3 className="text-lg font-bold text-slate-900">Distribuição por Categoria</h3>
@@ -213,9 +213,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+          <div className="p-2 bg-primary-50 text-primary rounded-lg">
             <Activity size={20} />
           </div>
           <h3 className="text-lg font-bold text-slate-900">Últimas Atividades</h3>
@@ -223,7 +223,7 @@ export default function DashboardPage() {
         <div className="space-y-4">
           {entries.slice(0, 5).map((entry) => (
             <div key={entry.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-indigo-600 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-primary transition-all">
                 <Clock size={20} />
               </div>
               <div className="flex-1">
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                   {new Date(entry.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
-              <div className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-wider rounded-full border border-indigo-100">
+              <div className="px-3 py-1 bg-primary-50 text-primary text-[10px] font-bold uppercase tracking-wider rounded-full border border-primary-100">
                 {entry.category}
               </div>
             </div>

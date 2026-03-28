@@ -225,7 +225,9 @@ export default function App() {
               displayName: currentUser.displayName || 'Usuário',
               photoURL: currentUser.photoURL || '',
               createdAt: serverTimestamp(),
-              role: 'user'
+              role: 'user',
+              status: 'active',
+              tags: []
             };
             await setDoc(doc(db, 'users', currentUser.uid), newProfile);
             setUserProfile(newProfile);
@@ -316,6 +318,8 @@ export default function App() {
             displayName: result.user.displayName || 'Membro',
             photoURL: result.user.photoURL || '',
             role: 'user',
+            status: 'active',
+            tags: [],
             createdAt: new Date() as any
           };
           await setDoc(userRef, newProfile);
@@ -667,9 +671,9 @@ export default function App() {
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                   {[
                     { id: 'Milagres', icon: Sparkles, color: 'text-amber-500', bg: 'bg-amber-50' },
-                    { id: 'Livramentos', icon: Shield, color: 'text-blue-500', bg: 'bg-blue-50' },
+                    { id: 'Livramentos', icon: Shield, color: 'text-primary', bg: 'bg-primary/10' },
                     { id: 'Desafios', icon: Mountain, color: 'text-slate-500', bg: 'bg-slate-50' },
-                    { id: 'Propósitos', icon: Target, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+                    { id: 'Propósitos', icon: Target, color: 'text-primary', bg: 'bg-primary/10' },
                     { id: 'Pedidos de oração', icon: HandHeart, color: 'text-rose-500', bg: 'bg-rose-50' },
                     { id: 'Orações respondidas', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
                     { id: 'Lições espirituais', icon: Lightbulb, color: 'text-yellow-500', bg: 'bg-yellow-50' },
@@ -802,7 +806,7 @@ export default function App() {
                                   )}
                                   <span className={`inline-flex items-center justify-center h-4 text-[8px] uppercase font-bold px-1.5 rounded-full border whitespace-nowrap ${
                                     entry.impact === 'Alto' ? 'bg-red-50 text-red-700 border-red-200' : 
-                                    entry.impact === 'Médio' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                                    entry.impact === 'Médio' ? 'bg-primary/10 text-primary border-primary/20' : 
                                     'bg-emerald-50 text-emerald-700 border-emerald-200'
                                   }`}>
                                     Impacto {entry.impact}
@@ -892,7 +896,7 @@ export default function App() {
                                 )}
                                 <span className={`inline-flex items-center justify-center h-4 text-[8px] uppercase font-bold px-1.5 rounded-full border whitespace-nowrap ${
                                   entry.impact === 'Alto' ? 'bg-red-50 text-red-700 border-red-200' : 
-                                  entry.impact === 'Médio' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                                  entry.impact === 'Médio' ? 'bg-primary/10 text-primary border-primary/20' : 
                                   'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 }`}>
                                   Impacto {entry.impact}

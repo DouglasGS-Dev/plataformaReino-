@@ -39,9 +39,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         };
       default:
         return {
-          icon: <AlertTriangle className="text-blue-600" size={24} />,
-          bg: 'bg-blue-50',
-          button: 'bg-blue-600 hover:bg-blue-700 text-white'
+          icon: <AlertTriangle className="text-primary" size={24} />,
+          bg: 'bg-primary/10',
+          button: 'btn-primary'
         };
     }
   };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogIn, X, Mail, Shield, Sparkles, AlertCircle } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -21,12 +22,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin, loadi
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
       >
-        <div className="relative h-32 bg-indigo-600 flex items-center justify-center overflow-hidden">
+        <div className="relative h-32 primary-gradient flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
           </div>
           <Sparkles className="text-white/40 absolute -right-4 -top-4 w-24 h-24 rotate-12" />
-          <LogIn className="text-white w-12 h-12 relative z-10" />
+          <Logo className="text-white w-12 h-12 relative z-10" showText={false} />
         </div>
 
         <div className="p-8 space-y-6">
@@ -65,7 +66,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin, loadi
               <input
                 type="email"
                 placeholder="E-mail"
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
             <button className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all">

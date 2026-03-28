@@ -178,6 +178,22 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
     
+    function isValidEBDTrack(data) {
+      return hasRequiredFields(['id', 'churchId', 'name', 'order', 'createdAt']) &&
+             data.id is string && data.churchId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.order is number &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidEBDCourse(data) {
+      return hasRequiredFields(['id', 'trackId', 'churchId', 'name', 'order', 'createdAt']) &&
+             data.id is string && data.trackId is string && data.churchId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.order is number &&
+             data.createdAt is timestamp;
+    }
+
     function isValidEBDClass(data) {
       return hasRequiredFields(['id', 'churchId', 'name', 'teacherId', 'teacherName', 'createdAt']) &&
              data.id is string && data.churchId is string &&
@@ -335,13 +351,21 @@ service cloud.firestore {
              (!('notes' in data) || data.notes is string);
     }
     
-    function isValidEBDClass(data) {
-      return hasRequiredFields(['id', 'churchId', 'name', 'teacherId', 'teacherName', 'createdAt']) &&
-             data.id is string && data.churchId is string &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.teacherId is string &&
-             data.teacherName is string &&
+    function isValidCellChatMessage(data) {
+      return hasRequiredFields(['id', 'cellId', 'authorId', 'authorName', 'content', 'type', 'createdAt']) &&
+             data.id is string && data.cellId is string &&
+             data.authorId is string && data.authorName is string && data.authorName.size() < 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 2000 &&
+             data.type in ['text', 'image', 'system'] &&
              data.createdAt is timestamp;
+    }
+
+    function isCellMember(cellId) {
+      return isAuthenticated() && 
+             (exists(/databases/$(database)/documents/cells/$(cellId)) && 
+              (request.auth.uid in get(/databases/$(database)/documents/cells/$(cellId)).data.members ||
+               get(/databases/$(database)/documents/cells/$(cellId)).data.leaderId == request.auth.uid ||
+               isChurchAdmin(get(/databases/$(database)/documents/cells/$(cellId)).data.churchId)));
     }
 
     function isChurchAdmin(churchId) {
@@ -387,6 +411,12 @@ service cloud.firestore {
       allow create: if isChurchAdmin(request.resource.data.churchId) && isValidCell(request.resource.data);
       allow update: if (isChurchAdmin(resource.data.churchId) || isOwner(resource.data.leaderId)) && isValidCell(request.resource.data);
       allow delete: if isChurchAdmin(resource.data.churchId);
+
+      match /messages/{messageId} {
+        allow read: if isCellMember(cellId);
+        allow create: if isCellMember(cellId) && isValidCellChatMessage(request.resource.data) && request.resource.data.authorId == request.auth.uid;
+        allow delete: if isCellMember(cellId) && (isOwner(resource.data.authorId) || isChurchAdmin(get(/databases/$(database)/documents/cells/$(cellId)).data.churchId));
+      }
     }
 
     match /events/{eventId} {
@@ -408,6 +438,20 @@ service cloud.firestore {
       allow create: if isChurchAdmin(request.resource.data.churchId) && isValidSchedule(request.resource.data);
       allow update: if isChurchAdmin(resource.data.churchId) && isValidSchedule(request.resource.data);
       allow delete: if isChurchAdmin(resource.data.churchId);
+    }
+
+    match /ebd_tracks/{trackId} {
+      allow read: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId));
+      allow create: if isAuthenticated() && isValidEBDTrack(request.resource.data) && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == request.resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+      allow update: if isAuthenticated() && isValidEBDTrack(request.resource.data) && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+      allow delete: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+    }
+
+    match /ebd_courses/{courseId} {
+      allow read: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId));
+      allow create: if isAuthenticated() && isValidEBDCourse(request.resource.data) && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == request.resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+      allow update: if isAuthenticated() && isValidEBDCourse(request.resource.data) && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
+      allow delete: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'pastor', 'leader'])));
     }
 
     match /ebd_classes/{classId} {
@@ -442,7 +486,9 @@ service cloud.firestore {
         // Others can only update likesCount or commentsCount
         (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']) &&
-          request.resource.data.likesCount == resource.data.likesCount + 1
+          request.resource.data.likesCount == resource.data.likesCount + 1 &&
+          !exists(/databases/$(database)/documents/posts/$(postId)/likes/$(request.auth.uid)) &&
+          getAfter(/databases/$(database)/documents/posts/$(postId)/likes/$(request.auth.uid)) != null
         ) ||
         (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentsCount']) &&
@@ -450,6 +496,12 @@ service cloud.firestore {
         )
       );
       allow delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || (isAdmin() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId));
+
+      match /likes/{userId} {
+        allow read: if isAuthenticated();
+        allow create: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
     }
 
     match /prayer_requests/{requestId} {
@@ -462,7 +514,9 @@ service cloud.firestore {
         (isValidPrayerRequest(request.resource.data) && (isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId))) ||
         (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['intercessorsCount']) &&
-          request.resource.data.intercessorsCount == resource.data.intercessorsCount + 1
+          request.resource.data.intercessorsCount == resource.data.intercessorsCount + 1 &&
+          !exists(/databases/$(database)/documents/prayer_requests/$(requestId)/intercessions/$(request.auth.uid)) &&
+          getAfter(/databases/$(database)/documents/prayer_requests/$(requestId)/intercessions/$(request.auth.uid)) != null
         )
       );
       allow delete: if isAuthenticated() && (isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId));
@@ -478,10 +532,10 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated(); // Allow reading other users in the same church (simplified for MVP)
-      allow create: if isAuthenticated() && isValidUser(request.resource.data) && uidUnchanged() && ((isOwner(userId) && request.resource.data.role in ['user', 'pastor', 'leader']) || isAdmin());
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) && uidNotModified() && ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == resource.data.churchId));
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && uidUnchanged() && ((isOwner(userId) && request.resource.data.role in ['user', 'pastor', 'leader']) || isAdmin() || (('churchId' in request.resource.data) && isChurchAdmin(request.resource.data.churchId)));
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && uidNotModified() && ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin() || (('churchId' in resource.data) && isChurchAdmin(resource.data.churchId)));
+      allow delete: if isAdmin() || (('churchId' in resource.data) && isChurchAdmin(resource.data.churchId));
       
       match /entries/{entryId} {
         allow read: if isOwner(userId) || isAdmin();

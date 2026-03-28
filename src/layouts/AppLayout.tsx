@@ -12,6 +12,7 @@ import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/fires
 import { UserProfile } from '../types';
 import LoginModal from '../components/LoginModal';
 import EnvironmentSwitcher from '../components/EnvironmentSwitcher';
+import { Logo } from '../components/Logo';
 
 export default function AppLayout() {
   const [user, setUser] = useState<User | null>(null);
@@ -54,6 +55,8 @@ export default function AppLayout() {
             displayName: user.displayName || 'Membro',
             photoURL: user.photoURL || '',
             role: 'user',
+            status: 'active',
+            tags: [],
             createdAt: serverTimestamp()
           };
           await setDoc(userRef, newProfile);
@@ -108,9 +111,9 @@ export default function AppLayout() {
 
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-slate-500 font-medium animate-pulse">Carregando...</p>
         </div>
       </div>
@@ -134,18 +137,16 @@ export default function AppLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-white flex flex-col md:flex-row">
       {/* Sidebar for Desktop */}
-      <aside className={`hidden md:flex flex-col transition-all duration-300 bg-white border-r border-slate-200 h-screen sticky top-0 z-30 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+      <aside className={`hidden md:flex flex-col transition-all duration-300 bg-white border-r border-slate-100 h-screen sticky top-0 z-30 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
         <div className="p-6 flex items-center justify-between">
           {!isSidebarCollapsed && (
-            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
-              ChurchOS
-            </h1>
+            <Logo className="w-8 h-8" showText={true} />
           )}
           <button 
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 transition-colors"
+            className="p-2 hover:bg-primary-50 rounded-lg text-slate-400 transition-colors"
           >
             <Menu size={20} />
           </button>
@@ -160,8 +161,8 @@ export default function AppLayout() {
               className={({ isActive }) => `
                 flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm
                 ${isActive 
-                  ? 'bg-indigo-50 text-indigo-700' 
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                  ? 'bg-primary-50 text-primary' 
+                  : 'text-slate-500 hover:bg-primary-50/50 hover:text-slate-900'}
                 ${isSidebarCollapsed ? 'justify-center' : ''}
               `}
               title={isSidebarCollapsed ? item.label : ''}
@@ -175,13 +176,13 @@ export default function AppLayout() {
         <div className="p-4 border-t border-slate-100 space-y-4">
           <EnvironmentSwitcher userProfile={userProfile} />
           {user ? (
-            <div className={`flex items-center bg-slate-50 p-3 rounded-xl border border-slate-200 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+            <div className={`flex items-center bg-slate-50 p-3 rounded-xl border border-slate-100 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
               <NavLink to="/app/profile" className={`flex items-center gap-3 overflow-hidden text-left hover:bg-slate-100 p-1 rounded-lg transition-colors flex-1 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
                 ) : (
-                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
-                    <UserIcon size={14} className="text-indigo-600" />
+                  <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center shrink-0">
+                    <UserIcon size={14} className="text-primary" />
                   </div>
                 )}
                 {!isSidebarCollapsed && (
@@ -197,7 +198,7 @@ export default function AppLayout() {
               )}
             </div>
           ) : (
-            <button onClick={() => setIsLoginModalOpen(true)} className={`w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all ${isSidebarCollapsed ? 'p-2' : ''}`}>
+            <button onClick={() => setIsLoginModalOpen(true)} className={`w-full flex items-center justify-center gap-2 px-4 py-2 primary-gradient text-white rounded-xl font-medium hover:brightness-110 transition-all ${isSidebarCollapsed ? 'p-2' : ''}`}>
               <LogIn size={18} /> {!isSidebarCollapsed && 'Entrar'}
             </button>
           )}
@@ -205,24 +206,22 @@ export default function AppLayout() {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-30">
-        <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-          ChurchOS
-        </h1>
+      <header className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-100 sticky top-0 z-30">
+        <Logo className="w-8 h-8" showText={true} />
         <div className="flex items-center gap-2">
           <EnvironmentSwitcher userProfile={userProfile} />
           {user ? (
-            <NavLink to="/app/profile" className="w-8 h-8 rounded-full overflow-hidden border-2 border-indigo-100">
+            <NavLink to="/app/profile" className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-100">
               {user.photoURL ? (
                 <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
-                <div className="w-full h-full bg-indigo-50 flex items-center justify-center">
-                  <UserIcon size={14} className="text-indigo-600" />
+                <div className="w-full h-full bg-primary-50 flex items-center justify-center">
+                  <UserIcon size={14} className="text-primary" />
                 </div>
               )}
             </NavLink>
           ) : (
-            <button onClick={() => setIsLoginModalOpen(true)} className="text-indigo-600 font-medium text-sm px-3 py-1.5 bg-indigo-50 rounded-lg">
+            <button onClick={() => setIsLoginModalOpen(true)} className="text-primary font-medium text-sm px-3 py-1.5 bg-primary-50 rounded-lg">
               Entrar
             </button>
           )}
@@ -230,13 +229,13 @@ export default function AppLayout() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden">
-        <div className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
+      <main className="flex-1 flex flex-col relative overflow-x-hidden w-full">
+        <div className="flex-1 p-4 md:p-8 pb-24 md:pb-8 w-full max-w-full">
           <Outlet context={{ user, userProfile, handleLogin }} />
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-2 py-2 flex items-center justify-around z-30">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-2 py-2 flex items-center justify-around z-30">
           {[
             { path: '/app', icon: Users, label: 'Feed' },
             { path: '/app/prayers', icon: Heart, label: 'Orações' },
@@ -250,7 +249,7 @@ export default function AppLayout() {
               end={item.path === '/app'}
               className={({ isActive }) => `
                 flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-all
-                ${isActive ? 'text-indigo-600' : 'text-slate-400'}
+                ${isActive ? 'text-primary' : 'text-slate-400'}
               `}
             >
               <item.icon size={20} />

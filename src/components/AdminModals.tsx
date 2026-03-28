@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2, Users, CheckCircle2, Copy, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, addDoc, updateDoc, doc, setDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, setDoc, serverTimestamp, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Ministry, Cell, Event, FinancialTransaction, UserProfile, MinistrySchedule } from '../types';
 
@@ -91,7 +91,7 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                   placeholder="Ex: Louvor, Infantil, Jovens"
                 />
               </div>
@@ -103,7 +103,7 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
                   required
                   value={leaderName}
                   onChange={(e) => setLeaderName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                   placeholder="Nome do responsável"
                 />
               </div>
@@ -113,7 +113,7 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all h-24 resize-none"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all h-24 resize-none"
                   placeholder="Breve descrição do propósito do ministério"
                 />
               </div>
@@ -129,7 +129,7 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 btn-primary flex items-center justify-center gap-2"
+                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {item ? 'Atualizar' : 'Salvar'}
@@ -143,9 +143,11 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
   );
 };
 
-export const AddCellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, churchId, item, onSuccess, onError }) => {
+export const CellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, churchId, item, onSuccess, onError }) => {
+  const [activeTab, setActiveTab] = useState<'info' | 'members' | 'reports'>('info');
   const [name, setName] = useState(item?.name || '');
   const [leaderName, setLeaderName] = useState(item?.leaderName || '');
+  const [host, setHost] = useState(item?.host || '');
   const [meetingDay, setMeetingDay] = useState(item?.meetingDay || 'Quarta-feira');
   const [meetingTime, setMeetingTime] = useState(item?.meetingTime || '20:00');
   const [address, setAddress] = useState(item?.address || '');
@@ -154,13 +156,15 @@ export const AddCellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, chur
   React.useEffect(() => {
     if (item) {
       setName(item.name);
-      setLeaderName(item.leaderName);
-      setMeetingDay(item.meetingDay);
-      setMeetingTime(item.meetingTime);
-      setAddress(item.address);
+      setLeaderName(item.leaderName || '');
+      setHost(item.host || '');
+      setMeetingDay(item.meetingDay || 'Quarta-feira');
+      setMeetingTime(item.meetingTime || '20:00');
+      setAddress(item.address || '');
     } else {
       setName('');
       setLeaderName('');
+      setHost('');
       setMeetingDay('Quarta-feira');
       setMeetingTime('20:00');
       setAddress('');
@@ -177,6 +181,7 @@ export const AddCellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, chur
         await updateDoc(doc(db, 'cells', item.id), {
           name,
           leaderName,
+          host,
           meetingDay,
           meetingTime,
           address,
@@ -187,6 +192,7 @@ export const AddCellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, chur
         await addDoc(collection(db, 'cells'), {
           name,
           leaderName,
+          host,
           meetingDay,
           meetingTime,
           address,
@@ -213,7 +219,7 @@ export const AddCellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, chur
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+            className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
           >
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Célula' : 'Nova Célula'}</h3>
@@ -222,69 +228,97 @@ export const AddCellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, chur
               </button>
             </div>
 
+            <div className="flex border-b border-slate-100">
+              <button onClick={() => setActiveTab('info')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'info' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Dados</button>
+              <button onClick={() => setActiveTab('members')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'members' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Membros</button>
+              <button onClick={() => setActiveTab('reports')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'reports' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Relatórios</button>
+            </div>
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Célula</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  placeholder="Ex: Célula Esperança"
-                />
-              </div>
+              {activeTab === 'info' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Célula</label>
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                        placeholder="Ex: Célula Esperança"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Líder</label>
+                      <input
+                        type="text"
+                        required
+                        value={leaderName}
+                        onChange={(e) => setLeaderName(e.target.value)}
+                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                        placeholder="Nome do líder"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Anfitrião</label>
+                    <input
+                      type="text"
+                      value={host}
+                      onChange={(e) => setHost(e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      placeholder="Nome do anfitrião"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Líder</label>
-                <input
-                  type="text"
-                  required
-                  value={leaderName}
-                  onChange={(e) => setLeaderName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  placeholder="Nome do responsável"
-                />
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Dia</label>
+                      <select
+                        value={meetingDay}
+                        onChange={(e) => setMeetingDay(e.target.value)}
+                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      >
+                        <option>Segunda-feira</option>
+                        <option>Terça-feira</option>
+                        <option>Quarta-feira</option>
+                        <option>Quinta-feira</option>
+                        <option>Sexta-feira</option>
+                        <option>Sábado</option>
+                        <option>Domingo</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Horário</label>
+                      <input
+                        type="time"
+                        value={meetingTime}
+                        onChange={(e) => setMeetingTime(e.target.value)}
+                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Dia</label>
-                  <select
-                    value={meetingDay}
-                    onChange={(e) => setMeetingDay(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  >
-                    <option>Segunda-feira</option>
-                    <option>Terça-feira</option>
-                    <option>Quarta-feira</option>
-                    <option>Quinta-feira</option>
-                    <option>Sexta-feira</option>
-                    <option>Sábado</option>
-                    <option>Domingo</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Horário</label>
-                  <input
-                    type="time"
-                    value={meetingTime}
-                    onChange={(e) => setMeetingTime(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Endereço</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  placeholder="Local da reunião"
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Endereço</label>
+                    <input
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      placeholder="Local da reunião"
+                    />
+                  </div>
+                </>
+              )}
+              {activeTab === 'members' && (
+                <div className="text-center py-8 text-slate-500">Funcionalidade de membros em breve.</div>
+              )}
+              {activeTab === 'reports' && (
+                <div className="text-center py-8 text-slate-500">Funcionalidade de relatórios em breve.</div>
+              )}
 
               <div className="pt-4 flex gap-3">
                 <button
@@ -297,7 +331,7 @@ export const AddCellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, chur
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 btn-primary flex items-center justify-center gap-2"
+                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {item ? 'Atualizar' : 'Salvar'}
@@ -392,7 +426,7 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                   placeholder="Ex: Conferência de Jovens"
                 />
               </div>
@@ -404,7 +438,7 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                 />
               </div>
 
@@ -414,7 +448,7 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                   placeholder="Ex: Templo Principal"
                 />
               </div>
@@ -424,7 +458,7 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all h-24 resize-none"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all h-24 resize-none"
                   placeholder="Detalhes do evento"
                 />
               </div>
@@ -440,7 +474,7 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 btn-primary flex items-center justify-center gap-2"
+                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {item ? 'Atualizar' : 'Salvar'}
@@ -561,7 +595,7 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
                   required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                   placeholder="Ex: Oferta de Domingo, Aluguel"
                 />
               </div>
@@ -575,7 +609,7 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
                     required
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                     placeholder="0,00"
                   />
                 </div>
@@ -584,7 +618,7 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                   >
                     {type === 'income' ? (
                       <>
@@ -614,7 +648,7 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                 />
               </div>
 
@@ -629,8 +663,8 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`flex-1 btn-primary flex items-center justify-center gap-2 ${
-                    type === 'income' ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500' : 'bg-red-600 hover:bg-red-700 border-red-500'
+                  className={`flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 ${
+                    type === 'income' ? 'from-emerald-600 to-emerald-500 shadow-emerald-500/20' : 'from-red-600 to-red-500 shadow-red-500/20'
                   }`}
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
@@ -645,13 +679,19 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
   );
 };
 
-export const AddMemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onClose, churchId, onError }) => {
+export const MemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onClose, churchId, item, onSuccess, onError }) => {
+  const [displayName, setDisplayName] = useState(item?.displayName || '');
+  const [email, setEmail] = useState(item?.email || '');
+  const [role, setRole] = useState(item?.role || 'user');
+  const [status, setStatus] = useState(item?.status || 'active');
+  const [tags, setTags] = useState(item?.tags?.join(', ') || '');
+  const [loading, setLoading] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (isOpen && churchId) {
-      // Fetch church invite code
+    if (isOpen && !item && churchId) {
+      // Fetch church invite code for invite mode
       const fetchChurch = async () => {
         try {
           const { getDoc } = await import('firebase/firestore');
@@ -665,13 +705,50 @@ export const AddMemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onCl
         }
       };
       fetchChurch();
+    } else if (item) {
+      setDisplayName(item.displayName || '');
+      setEmail(item.email || '');
+      setRole(item.role || 'user');
+      setStatus(item.status || 'active');
+      setTags(item.tags?.join(', ') || '');
+    } else {
+      setDisplayName('');
+      setEmail('');
+      setRole('user');
+      setStatus('active');
+      setTags('');
     }
-  }, [isOpen, churchId]);
+  }, [item, isOpen, churchId]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!item) return; // Invite mode doesn't submit a form
+    setLoading(true);
+    try {
+      if (item?.uid) {
+        await updateDoc(doc(db, 'users', item.uid), {
+          displayName,
+          email,
+          role,
+          status,
+          tags: tags.split(',').map(t => t.trim()).filter(t => t),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error("Error saving member:", error);
+      onError?.("Erro ao salvar membro.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -685,38 +762,117 @@ export const AddMemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onCl
             className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
           >
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">Convidar Membros</h3>
+              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Membro' : 'Convidar Membros'}</h3>
               <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                 <X size={20} className="text-slate-500" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6 text-center">
-              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
-                <Users size={32} />
-              </div>
-              
-              <div>
-                <h4 className="font-bold text-slate-800 text-lg">Código de Convite</h4>
-                <p className="text-sm text-slate-500 mt-1">
-                  Compartilhe este código com os membros da sua igreja para que eles possam se conectar ao seu ambiente.
-                </p>
-              </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 relative">
-                <div className="text-4xl font-mono font-bold tracking-widest text-indigo-600">
-                  {inviteCode || '...'}
+            {!item ? (
+              <div className="p-6 space-y-6 text-center">
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
+                  <Users size={32} />
                 </div>
-              </div>
+                
+                <div>
+                  <h4 className="font-bold text-slate-800 text-lg">Código de Convite</h4>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Compartilhe este código com os membros da sua igreja para que eles possam se conectar ao seu ambiente.
+                  </p>
+                </div>
 
-              <button
-                onClick={handleCopy}
-                className="w-full btn-primary flex items-center justify-center gap-2 py-3"
-              >
-                {copied ? <CheckCircle2 size={20} /> : <Copy size={20} />}
-                {copied ? 'Código Copiado!' : 'Copiar Código'}
-              </button>
-            </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 relative">
+                  <div className="text-4xl font-mono font-bold tracking-widest text-primary">
+                    {inviteCode || '...'}
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCopy}
+                  className="w-full primary-gradient text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                >
+                  {copied ? <CheckCircle2 size={20} /> : <Copy size={20} />}
+                  {copied ? 'Código Copiado!' : 'Copiar Código'}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
+                  <input
+                    type="text"
+                    required
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Função</label>
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as any)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    >
+                      <option value="user">Membro</option>
+                      <option value="leader">Líder</option>
+                      <option value="pastor">Pastor</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as any)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    >
+                      <option value="active">Ativo</option>
+                      <option value="inactive">Inativo</option>
+                      <option value="visitor">Visitante</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tags (separadas por vírgula)</label>
+                  <input
+                    type="text"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    placeholder="Ex: Batizado, Célula A, Voluntário"
+                  />
+                </div>
+                <div className="pt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                  >
+                    {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                    Atualizar
+                  </button>
+                </div>
+              </form>
+            )}
           </motion.div>
         </div>
       )}
@@ -724,24 +880,21 @@ export const AddMemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onCl
   );
 };
 
-export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, churchId, item, onSuccess, onError }) => {
+export const AddEBDTrackModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, churchId, item, onSuccess, onError }) => {
   const [name, setName] = useState(item?.name || '');
-  const [teacherName, setTeacherName] = useState(item?.teacherName || '');
-  const [category, setCategory] = useState(item?.category || 'Adultos');
   const [description, setDescription] = useState(item?.description || '');
+  const [order, setOrder] = useState(item?.order?.toString() || '0');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (item) {
       setName(item.name);
-      setTeacherName(item.teacherName);
-      setCategory(item.category);
       setDescription(item.description || '');
+      setOrder(item.order.toString());
     } else {
       setName('');
-      setTeacherName('');
-      setCategory('Adultos');
       setDescription('');
+      setOrder('0');
     }
   }, [item, isOpen]);
 
@@ -751,9 +904,160 @@ export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
     try {
       const data = {
         name,
-        teacherName,
+        description,
+        order: parseInt(order),
+        churchId,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (item?.id) {
+        await updateDoc(doc(db, 'ebd_tracks', item.id), data);
+      } else {
+        await addDoc(collection(db, 'ebd_tracks'), {
+          ...data,
+          createdAt: serverTimestamp(),
+        });
+      }
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error("Error saving EBD track:", error);
+      onError?.("Erro ao salvar trilha.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+          >
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Trilha' : 'Nova Trilha'}</h3>
+              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X size={20} className="text-slate-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Trilha</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  placeholder="Ex: Fundamentos da Fé, Discipulado"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Ordem</label>
+                <input
+                  type="number"
+                  required
+                  value={order}
+                  onChange={(e) => setOrder(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
+                  placeholder="Breve descrição da trilha..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                >
+                  {loading && <Loader2 size={18} className="animate-spin" />}
+                  {loading ? 'Salvando...' : 'Salvar Trilha'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, churchId, item, onSuccess, onError }) => {
+  const [name, setName] = useState(item?.name || '');
+  const [teacherId, setTeacherId] = useState(item?.teacherId || '');
+  const [teacherName, setTeacherName] = useState(item?.teacherName || '');
+  const [category, setCategory] = useState(item?.category || 'Adultos');
+  const [description, setDescription] = useState(item?.description || '');
+  const [courseId, setCourseId] = useState(item?.courseId || '');
+  const [courses, setCourses] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && churchId) {
+      const qCourses = query(collection(db, 'ebd_courses'), where('churchId', '==', churchId), orderBy('name'));
+      getDocs(qCourses).then(snapshot => {
+        setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      const qUsers = query(collection(db, 'users'), where('churchId', '==', churchId));
+      getDocs(qUsers).then(snapshot => {
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+    }
+  }, [isOpen, churchId]);
+
+  useEffect(() => {
+    if (item) {
+      setName(item.name);
+      setTeacherId(item.teacherId || '');
+      setTeacherName(item.teacherName || '');
+      setCategory(item.category);
+      setDescription(item.description || '');
+      setCourseId(item.courseId || '');
+    } else {
+      setName('');
+      setTeacherId('');
+      setTeacherName('');
+      setCategory('Adultos');
+      setDescription('');
+      setCourseId('');
+    }
+  }, [item, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const selectedTeacher = users.find(u => u.id === teacherId);
+      const data = {
+        name,
+        teacherId,
+        teacherName: selectedTeacher ? selectedTeacher.displayName : teacherName,
         category,
         description,
+        courseId,
         churchId,
         updatedAt: serverTimestamp(),
       };
@@ -796,27 +1100,44 @@ export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Curso (Opcional)</label>
+                <select
+                  value={courseId}
+                  onChange={(e) => setCourseId(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                >
+                  <option value="">Nenhum curso</option>
+                  {courses.map(course => (
+                    <option key={course.id} value={course.id}>{course.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Classe</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                   placeholder="Ex: Casais, Jovens, Discipulado"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Professor Responsável</label>
-                <input
-                  type="text"
+                <select
                   required
-                  value={teacherName}
-                  onChange={(e) => setTeacherName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="Nome do professor"
-                />
+                  value={teacherId}
+                  onChange={(e) => setTeacherId(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                >
+                  <option value="">Selecione um professor</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.displayName}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -824,7 +1145,7 @@ export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
                 >
                   <option value="Adultos">Adultos</option>
                   <option value="Jovens">Jovens</option>
@@ -839,7 +1160,7 @@ export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
                   placeholder="Objetivo da classe..."
                 />
               </div>
@@ -855,10 +1176,119 @@ export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 btn-primary flex items-center justify-center gap-2"
+                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {item ? 'Atualizar' : 'Salvar'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export const AddEBDCourseModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, churchId, item, onSuccess, onError }) => {
+  const [name, setName] = useState(item?.name || '');
+  const [description, setDescription] = useState(item?.description || '');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (item) {
+      setName(item.name);
+      setDescription(item.description || '');
+    } else {
+      setName('');
+      setDescription('');
+    }
+  }, [item, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const data = {
+        name,
+        description,
+        churchId,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (item?.id) {
+        await updateDoc(doc(db, 'ebd_courses', item.id), data);
+      } else {
+        await addDoc(collection(db, 'ebd_courses'), {
+          ...data,
+          createdAt: serverTimestamp(),
+        });
+      }
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error("Error saving EBD course:", error);
+      onError?.("Erro ao salvar curso.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+          >
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Curso' : 'Novo Curso'}</h3>
+              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X size={20} className="text-slate-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Curso</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  placeholder="Ex: Maturidade Cristã, Liderança"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
+                  placeholder="Breve descrição do curso..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                >
+                  {loading && <Loader2 size={18} className="animate-spin" />}
+                  {loading ? 'Salvando...' : 'Salvar Curso'}
                 </button>
               </div>
             </form>
@@ -1013,7 +1443,7 @@ export const AddScheduleModal = ({
                     required
                     value={eventId}
                     onChange={(e) => setEventId(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   >
                     <option value="">Selecione um evento</option>
                     {events.map(event => (
@@ -1031,7 +1461,7 @@ export const AddScheduleModal = ({
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
                 </div>
               </div>
@@ -1044,7 +1474,7 @@ export const AddScheduleModal = ({
                   <button
                     type="button"
                     onClick={handleAddRole}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
+                    className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1"
                   >
                     <Plus size={16} /> Adicionar Função
                   </button>
@@ -1061,7 +1491,7 @@ export const AddScheduleModal = ({
                             required
                             value={role.roleName}
                             onChange={(e) => handleRoleChange(index, 'roleName', e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                           />
                         </div>
                         <div>
@@ -1069,7 +1499,7 @@ export const AddScheduleModal = ({
                             required
                             value={role.userId}
                             onChange={(e) => handleRoleChange(index, 'userId', e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                           >
                             <option value="">Selecione um voluntário</option>
                             {members.map(member => (
@@ -1102,9 +1532,148 @@ export const AddScheduleModal = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                  className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
                 >
                   {loading ? 'Salvando...' : 'Salvar Escala'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export const AddEBDLessonModal: React.FC<ModalProps<any> & { classId: string }> = ({ isOpen, onClose, classId, item, onSuccess, onError }) => {
+  const [title, setTitle] = useState(item?.title || '');
+  const [content, setContent] = useState(item?.content || '');
+  const [videoUrl, setVideoUrl] = useState(item?.videoUrl || '');
+  const [order, setOrder] = useState(item?.order?.toString() || '0');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (item) {
+      setTitle(item.title);
+      setContent(item.content);
+      setVideoUrl(item.videoUrl || '');
+      setOrder(item.order.toString());
+    } else {
+      setTitle('');
+      setContent('');
+      setVideoUrl('');
+      setOrder('0');
+    }
+  }, [item, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const data = {
+        title,
+        content,
+        videoUrl,
+        order: parseInt(order),
+        classId,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (item?.id) {
+        await updateDoc(doc(db, `ebd_classes/${classId}/lessons`, item.id), data);
+      } else {
+        await addDoc(collection(db, `ebd_classes/${classId}/lessons`), {
+          ...data,
+          createdAt: serverTimestamp(),
+        });
+      }
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error("Error saving EBD lesson:", error);
+      onError?.("Erro ao salvar lição.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+          >
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Lição' : 'Nova Lição'}</h3>
+              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X size={20} className="text-slate-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Título da Lição</label>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  placeholder="Ex: Introdução ao Pentateuco"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Ordem</label>
+                <input
+                  type="number"
+                  required
+                  value={order}
+                  onChange={(e) => setOrder(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">URL do Vídeo (Opcional)</label>
+                <input
+                  type="url"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                  placeholder="https://youtube.com/..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Conteúdo (Markdown)</label>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-32 resize-none"
+                  placeholder="Escreva o conteúdo da lição..."
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  {item ? 'Atualizar' : 'Salvar'}
                 </button>
               </div>
             </form>

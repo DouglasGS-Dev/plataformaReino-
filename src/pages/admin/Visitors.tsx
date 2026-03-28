@@ -133,7 +133,7 @@ export default function AdminVisitors() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'new': return <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Novo</span>;
+      case 'new': return <span className="bg-primary-50 text-primary px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Novo</span>;
       case 'followed_up': return <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Acompanhado</span>;
       case 'member': return <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Membro</span>;
       case 'inactive': return <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Inativo</span>;
@@ -142,15 +142,15 @@ export default function AdminVisitors() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-0 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Visitantes</h1>
           <p className="text-slate-500">Acompanhe e integre novos visitantes</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-colors"
+          className="w-full md:w-auto primary-gradient text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-sm"
         >
           <UserPlus className="w-5 h-5" />
           Novo Visitante
@@ -166,7 +166,7 @@ export default function AdminVisitors() {
               placeholder="Buscar por nome ou telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function AdminVisitors() {
               {loading ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                   </td>
                 </tr>
               ) : filteredVisitors.length > 0 ? (
@@ -278,7 +278,7 @@ export default function AdminVisitors() {
                   type="text"
                   value={newVisitor.name}
                   onChange={(e) => setNewVisitor({ ...newVisitor, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                 />
               </div>
 
@@ -289,7 +289,7 @@ export default function AdminVisitors() {
                     type="tel"
                     value={newVisitor.phone}
                     onChange={(e) => setNewVisitor({ ...newVisitor, phone: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                   />
                 </div>
                 <div>
@@ -299,7 +299,7 @@ export default function AdminVisitors() {
                     type="date"
                     value={newVisitor.visitDate}
                     onChange={(e) => setNewVisitor({ ...newVisitor, visitDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                   />
                 </div>
               </div>
@@ -310,7 +310,7 @@ export default function AdminVisitors() {
                   type="email"
                   value={newVisitor.email}
                   onChange={(e) => setNewVisitor({ ...newVisitor, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                 />
               </div>
 
@@ -320,7 +320,7 @@ export default function AdminVisitors() {
                   type="text"
                   value={newVisitor.invitedBy}
                   onChange={(e) => setNewVisitor({ ...newVisitor, invitedBy: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                 />
               </div>
 
@@ -329,13 +329,13 @@ export default function AdminVisitors() {
                 <textarea
                   value={newVisitor.notes}
                   onChange={(e) => setNewVisitor({ ...newVisitor, notes: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none h-24 resize-none"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none h-24 resize-none"
                 />
               </div>
 
-              <button
+                <button
                 type="submit"
-                className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
+                className="w-full primary-gradient text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
               >
                 Registrar Visitante
               </button>

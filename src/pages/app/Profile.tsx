@@ -66,7 +66,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
-        <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mb-6">
+        <div className="w-20 h-20 bg-primary-50 text-primary rounded-full flex items-center justify-center mb-6">
           <UserIcon size={40} />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Seu Perfil</h2>
@@ -106,14 +106,14 @@ export default function ProfilePage() {
           <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
             <div className="flex items-center gap-6">
               <div className="relative group">
-                <div className="w-24 h-24 rounded-3xl bg-indigo-50 border-2 border-indigo-100 overflow-hidden flex items-center justify-center">
+                <div className="w-24 h-24 rounded-3xl bg-primary-50 border-2 border-primary-100 overflow-hidden flex items-center justify-center">
                   {photoURL ? (
                     <img src={photoURL} alt={displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <UserIcon size={40} className="text-indigo-300" />
+                    <UserIcon size={40} className="text-primary-300" />
                   )}
                 </div>
-                <button className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl border border-slate-200 shadow-sm text-slate-500 hover:text-indigo-600 transition-colors">
+                <button className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl border border-slate-200 shadow-sm text-slate-500 hover:text-primary transition-colors">
                   <Camera size={16} />
                 </button>
               </div>
@@ -136,7 +136,7 @@ export default function ProfilePage() {
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+                    className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary outline-none transition-all text-sm"
                   />
                 </div>
               </div>
@@ -163,7 +163,7 @@ export default function ProfilePage() {
                   value={photoURL}
                   onChange={(e) => setPhotoURL(e.target.value)}
                   placeholder="https://exemplo.com/foto.jpg"
-                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary outline-none transition-all text-sm"
                 />
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function ProfilePage() {
               <button 
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+                className="flex items-center gap-2 px-8 py-3 bg-primary text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
               >
                 {isSaving ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -190,7 +190,7 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all group">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-slate-100 text-slate-500 rounded-xl group-hover:bg-white group-hover:text-indigo-600 transition-all">
+                  <div className="p-2 bg-slate-100 text-slate-500 rounded-xl group-hover:bg-white group-hover:text-primary transition-all">
                     <Bell size={20} />
                   </div>
                   <div className="text-left">
@@ -202,7 +202,7 @@ export default function ProfilePage() {
               </button>
               <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all group">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-slate-100 text-slate-500 rounded-xl group-hover:bg-white group-hover:text-indigo-600 transition-all">
+                  <div className="p-2 bg-slate-100 text-slate-500 rounded-xl group-hover:bg-white group-hover:text-primary transition-all">
                     <Shield size={20} />
                   </div>
                   <div className="text-left">
@@ -221,11 +221,11 @@ export default function ProfilePage() {
             <h3 className="text-lg font-bold text-slate-900 mb-6">Sua Igreja</h3>
             {userProfile?.churchId ? (
               <div className="space-y-4">
-                <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                  <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Igreja Atual</p>
-                  <p className="text-sm font-bold text-indigo-900">Igreja Batista Central</p>
+                <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100">
+                  <p className="text-xs font-bold text-primary-400 uppercase tracking-widest mb-1">Igreja Atual</p>
+                  <p className="text-sm font-bold text-primary-900">Igreja Batista Central</p>
                 </div>
-                <button className="w-full py-3 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors">
+                <button className="w-full py-3 text-sm font-bold text-slate-500 hover:text-primary transition-colors">
                   Trocar de Igreja
                 </button>
               </div>
