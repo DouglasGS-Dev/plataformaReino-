@@ -13,6 +13,7 @@ const LoginModal = lazy(() => import('../../components/LoginModal'));
 const SpiritualMentor = lazy(() => import('../../components/SpiritualMentor'));
 const UserProfileComponent = lazy(() => import('../../components/UserProfile').then(m => ({ default: m.UserProfile })));
 
+import { BaseModal } from '../../components/BaseModal';
 import { SpiritualEntry, Category, UserProfile } from '../../types';
 import { auth, db, handleFirestoreError, OperationType } from '../../firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
@@ -1011,45 +1012,33 @@ export default function App() {
       </Suspense>
 
       {/* Logout Confirmation Modal */}
-      <AnimatePresence>
-        {isLogoutModalOpen && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsLogoutModalOpen(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center"
-            >
-              <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <LogOut size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Sair da conta?</h3>
-              <p className="text-slate-500 mb-8">Você precisará entrar novamente para acessar seus registros e a comunidade.</p>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setIsLogoutModalOpen(false)}
-                  className="flex-1 px-6 py-3 rounded-2xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={handleLogout}
-                  className="flex-1 px-6 py-3 rounded-2xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
-                >
-                  Sair
-                </button>
-              </div>
-            </motion.div>
+      <BaseModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        showCloseButton={false}
+      >
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <LogOut size={32} />
           </div>
-        )}
-      </AnimatePresence>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">Sair da conta?</h3>
+          <p className="text-slate-500 mb-8">Você precisará entrar novamente para acessar seus registros e a comunidade.</p>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="flex-1 px-6 py-3 rounded-2xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="flex-1 px-6 py-3 rounded-2xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      </BaseModal>
 
       {/* Auth Error Toast */}
       <AnimatePresence>

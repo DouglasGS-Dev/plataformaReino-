@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2, Users, CheckCircle2, Copy, Plus, Trash2, AlertCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { BaseModal } from './BaseModal';
 import { collection, addDoc, updateDoc, doc, setDoc, serverTimestamp, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Ministry, Cell, Event, FinancialTransaction, UserProfile, MinistrySchedule } from '../types';
@@ -14,6 +14,8 @@ interface ModalProps<T> {
   onSuccess?: () => void;
   onError?: (message: string) => void;
 }
+
+// BaseModal is now imported from its own file
 
 export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClose, churchId, item, onSuccess, onError }) => {
   const [name, setName] = useState(item?.name || '');
@@ -82,79 +84,66 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-          >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Ministério' : 'Novo Ministério'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Ministério</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  placeholder="Ex: Louvor, Infantil, Jovens"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Líder</label>
-                <input
-                  type="text"
-                  required
-                  value={leaderName}
-                  onChange={(e) => setLeaderName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                  placeholder="Nome do responsável"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all h-24 resize-none"
-                  placeholder="Breve descrição do propósito do ministério"
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {item ? 'Atualizar' : 'Salvar'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Ministério' : 'Novo Ministério'}
+      maxWidth="max-w-md"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Ministério</label>
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            placeholder="Ex: Louvor, Infantil, Jovens"
+          />
         </div>
-      )}
-    </AnimatePresence>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Líder</label>
+          <input
+            type="text"
+            required
+            value={leaderName}
+            onChange={(e) => setLeaderName(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            placeholder="Nome do responsável"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all h-24 resize-none"
+            placeholder="Breve descrição do propósito do ministério"
+          />
+        </div>
+
+        <div className="pt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {item ? 'Atualizar' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -241,136 +230,123 @@ export const CellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, churchI
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
-          >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Célula' : 'Nova Célula'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Célula' : 'Nova Célula'}
+      maxWidth="max-w-lg"
+    >
+      <div className="flex border-b border-slate-100">
+        <button onClick={() => setActiveTab('info')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'info' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Dados</button>
+        <button onClick={() => setActiveTab('members')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'members' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Membros</button>
+        <button onClick={() => setActiveTab('reports')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'reports' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Relatórios</button>
+      </div>
 
-            <div className="flex border-b border-slate-100">
-              <button onClick={() => setActiveTab('info')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'info' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Dados</button>
-              <button onClick={() => setActiveTab('members')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'members' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Membros</button>
-              <button onClick={() => setActiveTab('reports')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'reports' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}>Relatórios</button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {activeTab === 'info' && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Célula</label>
-                      <input
-                        type="text"
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                        placeholder="Ex: Célula Esperança"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Líder</label>
-                      <input
-                        type="text"
-                        required
-                        value={leaderName}
-                        onChange={(e) => setLeaderName(e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                        placeholder="Nome do líder"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Anfitrião</label>
-                    <input
-                      type="text"
-                      value={host}
-                      onChange={(e) => setHost(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                      placeholder="Nome do anfitrião"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Dia</label>
-                      <select
-                        value={meetingDay}
-                        onChange={(e) => setMeetingDay(e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                      >
-                        <option>Segunda-feira</option>
-                        <option>Terça-feira</option>
-                        <option>Quarta-feira</option>
-                        <option>Quinta-feira</option>
-                        <option>Sexta-feira</option>
-                        <option>Sábado</option>
-                        <option>Domingo</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Horário</label>
-                      <input
-                        type="time"
-                        value={meetingTime}
-                        onChange={(e) => setMeetingTime(e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Endereço</label>
-                    <input
-                      type="text"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                      placeholder="Local da reunião"
-                    />
-                  </div>
-                </>
-              )}
-              {activeTab === 'members' && (
-                <div className="text-center py-8 text-slate-500">Funcionalidade de membros em breve.</div>
-              )}
-              {activeTab === 'reports' && (
-                <div className="text-center py-8 text-slate-500">Funcionalidade de relatórios em breve.</div>
-              )}
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {item ? 'Atualizar' : 'Salvar'}
-                </button>
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {activeTab === 'info' && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Célula</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  placeholder="Ex: Célula Esperança"
+                />
               </div>
-            </form>
-          </motion.div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Líder</label>
+                <input
+                  type="text"
+                  required
+                  value={leaderName}
+                  onChange={(e) => setLeaderName(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  placeholder="Nome do líder"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Anfitrião</label>
+              <input
+                type="text"
+                value={host}
+                onChange={(e) => setHost(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                placeholder="Nome do anfitrião"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Dia</label>
+                <select
+                  value={meetingDay}
+                  onChange={(e) => setMeetingDay(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                >
+                  <option>Segunda-feira</option>
+                  <option>Terça-feira</option>
+                  <option>Quarta-feira</option>
+                  <option>Quinta-feira</option>
+                  <option>Sexta-feira</option>
+                  <option>Sábado</option>
+                  <option>Domingo</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Horário</label>
+                <input
+                  type="time"
+                  value={meetingTime}
+                  onChange={(e) => setMeetingTime(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Endereço</label>
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                placeholder="Local da reunião"
+              />
+            </div>
+          </>
+        )}
+        {activeTab === 'members' && (
+          <div className="text-center py-8 text-slate-500">Funcionalidade de membros em breve.</div>
+        )}
+        {activeTab === 'reports' && (
+          <div className="text-center py-8 text-slate-500">Funcionalidade de relatórios em breve.</div>
+        )}
+
+        <div className="pt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {item ? 'Atualizar' : 'Salvar'}
+          </button>
         </div>
-      )}
-    </AnimatePresence>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -445,89 +421,76 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-          >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Evento' : 'Novo Evento'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Título do Evento</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  placeholder="Ex: Conferência de Jovens"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Local</label>
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                  placeholder="Ex: Templo Principal"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all h-24 resize-none"
-                  placeholder="Detalhes do evento"
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {item ? 'Atualizar' : 'Salvar'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Evento' : 'Novo Evento'}
+      maxWidth="max-w-md"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Título do Evento</label>
+          <input
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            placeholder="Ex: Conferência de Jovens"
+          />
         </div>
-      )}
-    </AnimatePresence>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+          <input
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Local</label>
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            placeholder="Ex: Templo Principal"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all h-24 resize-none"
+            placeholder="Detalhes do evento"
+          />
+        </div>
+
+        <div className="pt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {item ? 'Atualizar' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -607,132 +570,119 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Transação' : 'Nova Transação'}
+      maxWidth="max-w-md"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div className="flex p-1 bg-slate-100 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setType('income')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              type === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
           >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Transação' : 'Nova Transação'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="flex p-1 bg-slate-100 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setType('income')}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                    type === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  Entrada
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('expense')}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                    type === 'expense' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  Saída
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                <input
-                  type="text"
-                  required
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  placeholder="Ex: Oferta de Domingo, Aluguel"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Valor (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                    placeholder="0,00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                  >
-                    {type === 'income' ? (
-                      <>
-                        <option>Oferta</option>
-                        <option>Dízimo</option>
-                        <option>Doação</option>
-                        <option>Evento</option>
-                        <option>Outros</option>
-                      </>
-                    ) : (
-                      <>
-                        <option>Aluguel</option>
-                        <option>Energia/Água</option>
-                        <option>Ministério</option>
-                        <option>Manutenção</option>
-                        <option>Outros</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 ${
-                    type === 'income' ? 'from-emerald-600 to-emerald-500 shadow-emerald-500/20' : 'from-red-600 to-red-500 shadow-red-500/20'
-                  }`}
-                >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {item ? 'Atualizar' : 'Salvar'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+            Entrada
+          </button>
+          <button
+            type="button"
+            onClick={() => setType('expense')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              type === 'expense' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Saída
+          </button>
         </div>
-      )}
-    </AnimatePresence>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+          <input
+            type="text"
+            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            placeholder="Ex: Oferta de Domingo, Aluguel"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Valor (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              required
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+              placeholder="0,00"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            >
+              {type === 'income' ? (
+                <>
+                  <option>Oferta</option>
+                  <option>Dízimo</option>
+                  <option>Doação</option>
+                  <option>Evento</option>
+                  <option>Outros</option>
+                </>
+              ) : (
+                <>
+                  <option>Aluguel</option>
+                  <option>Energia/Água</option>
+                  <option>Ministério</option>
+                  <option>Manutenção</option>
+                  <option>Outros</option>
+                </>
+              )}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+          <input
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+          />
+        </div>
+
+        <div className="pt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className={`flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 ${
+              type === 'income' ? 'from-emerald-600 to-emerald-500 shadow-emerald-500/20' : 'from-red-600 to-red-500 shadow-red-500/20'
+            }`}
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {item ? 'Atualizar' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -820,131 +770,118 @@ export const MemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onClose
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-          >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Membro' : 'Convidar Membros'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Membro' : 'Convidar Membros'}
+      maxWidth="max-w-md"
+    >
+      {!item ? (
+        <div className="p-6 space-y-6 text-center">
+          <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
+            <Users size={32} />
+          </div>
+          
+          <div>
+            <h4 className="font-bold text-slate-800 text-lg">Código de Convite</h4>
+            <p className="text-sm text-slate-500 mt-1">
+              Compartilhe este código com os membros da sua igreja para que eles possam se conectar ao seu ambiente.
+            </p>
+          </div>
+
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 relative">
+            <div className="text-4xl font-mono font-bold tracking-widest text-primary">
+              {inviteCode || '...'}
             </div>
+          </div>
 
-            {!item ? (
-              <div className="p-6 space-y-6 text-center">
-                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
-                  <Users size={32} />
-                </div>
-                
-                <div>
-                  <h4 className="font-bold text-slate-800 text-lg">Código de Convite</h4>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Compartilhe este código com os membros da sua igreja para que eles possam se conectar ao seu ambiente.
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 relative">
-                  <div className="text-4xl font-mono font-bold tracking-widest text-primary">
-                    {inviteCode || '...'}
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleCopy}
-                  className="w-full primary-gradient text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                >
-                  {copied ? <CheckCircle2 size={20} /> : <Copy size={20} />}
-                  {copied ? 'Código Copiado!' : 'Copiar Código'}
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
-                  <input
-                    type="text"
-                    required
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Função</label>
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value as any)}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                    >
-                      <option value="user">Membro</option>
-                      <option value="leader">Líder</option>
-                      <option value="pastor">Pastor</option>
-                      <option value="admin">Administrador</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as any)}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                    >
-                      <option value="active">Ativo</option>
-                      <option value="inactive">Inativo</option>
-                      <option value="visitor">Visitante</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Tags (separadas por vírgula)</label>
-                  <input
-                    type="text"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                    placeholder="Ex: Batizado, Célula A, Voluntário"
-                  />
-                </div>
-                <div className="pt-4 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                  >
-                    {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                    Atualizar
-                  </button>
-                </div>
-              </form>
-            )}
-          </motion.div>
+          <button
+            onClick={handleCopy}
+            className="w-full primary-gradient text-white py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+          >
+            {copied ? <CheckCircle2 size={20} /> : <Copy size={20} />}
+            {copied ? 'Código Copiado!' : 'Copiar Código'}
+          </button>
         </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
+            <input
+              type="text"
+              required
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Função</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as any)}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+              >
+                <option value="user">Membro</option>
+                <option value="leader">Líder</option>
+                <option value="pastor">Pastor</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as any)}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+              >
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+                <option value="visitor">Visitante</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Tags (separadas por vírgula)</label>
+            <input
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+              placeholder="Ex: Batizado, Célula A, Voluntário"
+            />
+          </div>
+          <div className="pt-4 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+              Atualizar
+            </button>
+          </div>
+        </form>
       )}
-    </AnimatePresence>
+    </BaseModal>
   );
 };
 
@@ -1013,78 +950,65 @@ export const AddEBDTrackModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-          >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Trilha' : 'Nova Trilha'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Trilha</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  placeholder="Ex: Fundamentos da Fé, Discipulado"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Ordem</label>
-                <input
-                  type="number"
-                  required
-                  value={order}
-                  onChange={(e) => setOrder(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
-                  placeholder="Breve descrição da trilha..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
-                >
-                  {loading && <Loader2 size={18} className="animate-spin" />}
-                  {loading ? 'Salvando...' : 'Salvar Trilha'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Trilha' : 'Nova Trilha'}
+      maxWidth="max-w-md"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Trilha</label>
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            placeholder="Ex: Fundamentos da Fé, Discipulado"
+          />
         </div>
-      )}
-    </AnimatePresence>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Ordem</label>
+          <input
+            type="number"
+            required
+            value={order}
+            onChange={(e) => setOrder(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
+            placeholder="Breve descrição da trilha..."
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+          >
+            {loading && <Loader2 size={18} className="animate-spin" />}
+            {loading ? 'Salvando...' : 'Salvar Trilha'}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -1166,111 +1090,98 @@ export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Classe' : 'Nova Classe'}
+      maxWidth="max-w-md"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Curso (Opcional)</label>
+          <select
+            value={courseId}
+            onChange={(e) => setCourseId(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
           >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Classe' : 'Nova Classe'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Curso (Opcional)</label>
-                <select
-                  value={courseId}
-                  onChange={(e) => setCourseId(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                >
-                  <option value="">Nenhum curso</option>
-                  {courses.map(course => (
-                    <option key={course.id} value={course.id}>{course.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Classe</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  placeholder="Ex: Casais, Jovens, Discipulado"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Professor Responsável</label>
-                <select
-                  required
-                  value={teacherId}
-                  onChange={(e) => setTeacherId(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                >
-                  <option value="">Selecione um professor</option>
-                  {users.map(user => (
-                    <option key={user.id} value={user.id}>{user.displayName}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                >
-                  <option value="Adultos">Adultos</option>
-                  <option value="Jovens">Jovens</option>
-                  <option value="Adolescentes">Adolescentes</option>
-                  <option value="Crianças">Crianças</option>
-                  <option value="Discipulado">Discipulado</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
-                  placeholder="Objetivo da classe..."
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {item ? 'Atualizar' : 'Salvar'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+            <option value="">Nenhum curso</option>
+            {courses.map(course => (
+              <option key={course.id} value={course.id}>{course.name}</option>
+            ))}
+          </select>
         </div>
-      )}
-    </AnimatePresence>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Classe</label>
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            placeholder="Ex: Casais, Jovens, Discipulado"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Professor Responsável</label>
+          <select
+            required
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+          >
+            <option value="">Selecione um professor</option>
+            {users.map(user => (
+              <option key={user.id} value={user.id}>{user.displayName}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+          >
+            <option value="Adultos">Adultos</option>
+            <option value="Jovens">Jovens</option>
+            <option value="Adolescentes">Adolescentes</option>
+            <option value="Crianças">Crianças</option>
+            <option value="Discipulado">Discipulado</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
+            placeholder="Objetivo da classe..."
+          />
+        </div>
+
+        <div className="pt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {item ? 'Atualizar' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -1319,67 +1230,54 @@ export const AddEBDCourseModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, 
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-          >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Curso' : 'Novo Curso'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Curso</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  placeholder="Ex: Maturidade Cristã, Liderança"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
-                  placeholder="Breve descrição do curso..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
-                >
-                  {loading && <Loader2 size={18} className="animate-spin" />}
-                  {loading ? 'Salvando...' : 'Salvar Curso'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Curso' : 'Novo Curso'}
+      maxWidth="max-w-md"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Curso</label>
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            placeholder="Ex: Maturidade Cristã, Liderança"
+          />
         </div>
-      )}
-    </AnimatePresence>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-24 resize-none"
+            placeholder="Breve descrição do curso..."
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+          >
+            {loading && <Loader2 size={18} className="animate-spin" />}
+            {loading ? 'Salvando...' : 'Salvar Curso'}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -1499,133 +1397,118 @@ export const AddScheduleModal = ({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden my-8"
-          >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h3 className="text-xl font-bold text-slate-900">
-                {scheduleToEdit ? 'Editar Escala' : 'Nova Escala'}
-              </h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={scheduleToEdit ? 'Editar Escala' : 'Nova Escala'}
+      maxWidth="max-w-2xl"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Evento
+            </label>
+            <select
+              required
+              value={eventId}
+              onChange={(e) => setEventId(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            >
+              <option value="">Selecione um evento</option>
+              {events.map(event => (
+                <option key={event.id} value={event.id}>{event.title}</option>
+              ))}
+            </select>
+          </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Evento
-                  </label>
-                  <select
-                    required
-                    value={eventId}
-                    onChange={(e) => setEventId(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  >
-                    <option value="">Selecione um evento</option>
-                    {events.map(event => (
-                      <option key={event.id} value={event.id}>{event.title}</option>
-                    ))}
-                  </select>
-                </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Data
+            </label>
+            <input
+              type="date"
+              required
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            />
+          </div>
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Data
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  />
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <label className="block text-sm font-medium text-slate-700">
+              Funções e Voluntários
+            </label>
+            <button
+              type="button"
+              onClick={handleAddRole}
+              className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1"
+            >
+              <Plus size={16} /> Adicionar Função
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            {roles.map((role, index) => (
+              <div key={index} className="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Nome da Função (ex: Louvor, Recepção)"
+                      required
+                      value={role.roleName}
+                      onChange={(e) => handleRoleChange(index, 'roleName', e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <select
+                      required
+                      value={role.userId}
+                      onChange={(e) => handleRoleChange(index, 'userId', e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    >
+                      <option value="">Selecione um voluntário</option>
+                      {members.map(member => (
+                        <option key={member.uid} value={member.uid}>{member.displayName}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Funções e Voluntários
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleAddRole}
-                    className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1"
-                  >
-                    <Plus size={16} /> Adicionar Função
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  {roles.map((role, index) => (
-                    <div key={index} className="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                      <div className="flex-1 space-y-4">
-                        <div>
-                          <input
-                            type="text"
-                            placeholder="Nome da Função (ex: Louvor, Recepção)"
-                            required
-                            value={role.roleName}
-                            onChange={(e) => handleRoleChange(index, 'roleName', e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                          />
-                        </div>
-                        <div>
-                          <select
-                            required
-                            value={role.userId}
-                            onChange={(e) => handleRoleChange(index, 'userId', e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                          >
-                            <option value="">Selecione um voluntário</option>
-                            {members.map(member => (
-                              <option key={member.uid} value={member.uid}>{member.displayName}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRole(index)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-1"
-                        disabled={roles.length === 1}
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors"
+                  onClick={() => handleRemoveRole(index)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-1"
+                  disabled={roles.length === 1}
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
-                >
-                  {loading ? 'Salvando...' : 'Salvar Escala'}
+                  <Trash2 size={20} />
                 </button>
               </div>
-            </form>
-          </motion.div>
+            ))}
+          </div>
         </div>
-      )}
-    </AnimatePresence>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2.5 primary-gradient text-white rounded-xl font-medium hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+          >
+            {loading ? 'Salvando...' : 'Salvar Escala'}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -1682,88 +1565,75 @@ export const AddEBDLessonModal: React.FC<ModalProps<any> & { classId: string }> 
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-          >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">{item ? 'Editar Lição' : 'Nova Lição'}</h3>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Título da Lição</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                  placeholder="Ex: Introdução ao Pentateuco"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Ordem</label>
-                <input
-                  type="number"
-                  required
-                  value={order}
-                  onChange={(e) => setOrder(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">URL do Vídeo (Opcional)</label>
-                <input
-                  type="url"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                  placeholder="https://youtube.com/..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Conteúdo (Markdown)</label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-32 resize-none"
-                  placeholder="Escreva o conteúdo da lição..."
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {item ? 'Atualizar' : 'Salvar'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item ? 'Editar Lição' : 'Nova Lição'}
+      maxWidth="max-w-md"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Título da Lição</label>
+          <input
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+            placeholder="Ex: Introdução ao Pentateuco"
+          />
         </div>
-      )}
-    </AnimatePresence>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Ordem</label>
+          <input
+            type="number"
+            required
+            value={order}
+            onChange={(e) => setOrder(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">URL do Vídeo (Opcional)</label>
+          <input
+            type="url"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+            placeholder="https://youtube.com/..."
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Conteúdo (Markdown)</label>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none h-32 resize-none"
+            placeholder="Escreva o conteúdo da lição..."
+          />
+        </div>
+
+        <div className="pt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 primary-gradient text-white py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {item ? 'Atualizar' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };

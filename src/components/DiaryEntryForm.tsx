@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { X, Sparkles, Book, Info, Star, Zap, Shield, Mountain, Target, HandHeart, CheckCircle2, Lightbulb, Heart, MessageCircle, Trash2, Image as ImageIcon, Megaphone } from 'lucide-react';
 import { Category, Impact, SpiritualEntry, PostMedia } from '../types';
 import { compressImage } from '../utils/media';
+import { BaseModal } from './BaseModal';
 
 interface DiaryEntryFormProps {
   onSave: (entry: Omit<SpiritualEntry, 'id' | 'date'>, id?: number) => void;
@@ -166,17 +167,13 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      showCloseButton={false}
     >
-      <motion.div 
-        initial={{ scale: 0.95, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 md:p-8 shadow-2xl"
-      >
+      <div className="max-h-[80vh] overflow-y-auto -mx-6 -my-6 p-6 md:p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
@@ -272,7 +269,6 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
               ))}
             </div>
 
-              {/* Media Upload Section */}
             <div className="mt-4">
               <div className="flex flex-wrap gap-2 mb-4">
                 <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer border-2 border-dashed ${selectedMedia.length > 0 ? 'bg-primary-50 border-primary-200 text-primary' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-primary-300 hover:bg-primary-50'}`}>
@@ -280,9 +276,7 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
                   <span>{selectedMedia.length > 0 ? `${selectedMedia.length} Mídias` : 'Adicionar Mídia'}</span>
                   <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileSelect} />
                 </label>
-
               </div>
-
 
               {selectedMedia.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4 p-3 bg-slate-50 rounded-2xl border border-slate-200">
@@ -438,7 +432,7 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
             </button>
           </div>
         </form>
-      </motion.div>
-    </motion.div>
+      </div>
+    </BaseModal>
   );
 }
