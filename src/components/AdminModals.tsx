@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Loader2, Users, CheckCircle2, Copy, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Loader2, Users, CheckCircle2, Copy, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, updateDoc, doc, setDoc, serverTimestamp, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Ministry, Cell, Event, FinancialTransaction, UserProfile, MinistrySchedule } from '../types';
+import { toast } from 'sonner';
 
 interface ModalProps<T> {
   isOpen: boolean;
@@ -34,7 +35,15 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !leaderName) return;
+    if (!name || !leaderName) {
+      toast.error("Por favor, preencha o nome e o líder.");
+      return;
+    }
+
+    if (!churchId) {
+      toast.error("ID da igreja não encontrado. Por favor, faça login novamente.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -46,6 +55,7 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
           churchId,
           updatedAt: serverTimestamp(),
         });
+        toast.success("Ministério atualizado com sucesso!");
       } else {
         await addDoc(collection(db, 'ministries'), {
           name,
@@ -55,12 +65,17 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
           memberCount: 0,
           createdAt: serverTimestamp(),
         });
+        toast.success("Ministério criado com sucesso!");
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving ministry:", error);
-      onError?.("Erro ao salvar ministério.");
+      const message = error.code === 'permission-denied' 
+        ? "Você não tem permissão para realizar esta ação." 
+        : "Erro ao salvar ministério. Tente novamente.";
+      toast.error(message);
+      onError?.(message);
     } finally {
       setLoading(false);
     }
@@ -173,7 +188,15 @@ export const CellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, churchI
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !leaderName) return;
+    if (!name || !leaderName) {
+      toast.error("Por favor, preencha o nome e o líder.");
+      return;
+    }
+
+    if (!churchId) {
+      toast.error("ID da igreja não encontrado. Por favor, faça login novamente.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -188,6 +211,7 @@ export const CellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, churchI
           churchId,
           updatedAt: serverTimestamp(),
         });
+        toast.success("Célula atualizada com sucesso!");
       } else {
         await addDoc(collection(db, 'cells'), {
           name,
@@ -200,12 +224,17 @@ export const CellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, churchI
           memberCount: 0,
           createdAt: serverTimestamp(),
         });
+        toast.success("Célula criada com sucesso!");
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving cell:", error);
-      onError?.("Erro ao salvar célula.");
+      const message = error.code === 'permission-denied' 
+        ? "Você não tem permissão para realizar esta ação." 
+        : "Erro ao salvar célula. Tente novamente.";
+      toast.error(message);
+      onError?.(message);
     } finally {
       setLoading(false);
     }
@@ -368,7 +397,15 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !date) return;
+    if (!title || !date) {
+      toast.error("Por favor, preencha o título e a data.");
+      return;
+    }
+
+    if (!churchId) {
+      toast.error("ID da igreja não encontrado. Por favor, faça login novamente.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -381,6 +418,7 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
           churchId,
           updatedAt: serverTimestamp(),
         });
+        toast.success("Evento atualizado com sucesso!");
       } else {
         await addDoc(collection(db, 'events'), {
           title,
@@ -390,12 +428,17 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
           churchId,
           createdAt: serverTimestamp(),
         });
+        toast.success("Evento criado com sucesso!");
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving event:", error);
-      onError?.("Erro ao salvar evento.");
+      const message = error.code === 'permission-denied' 
+        ? "Você não tem permissão para realizar esta ação." 
+        : "Erro ao salvar evento. Tente novamente.";
+      toast.error(message);
+      onError?.(message);
     } finally {
       setLoading(false);
     }
@@ -514,7 +557,15 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description || !amount) return;
+    if (!description || !amount) {
+      toast.error("Por favor, preencha a descrição e o valor.");
+      return;
+    }
+
+    if (!churchId) {
+      toast.error("ID da igreja não encontrado. Por favor, faça login novamente.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -528,6 +579,7 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
           churchId,
           updatedAt: serverTimestamp(),
         });
+        toast.success("Transação atualizada com sucesso!");
       } else {
         await addDoc(collection(db, 'finances'), {
           description,
@@ -538,12 +590,17 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
           churchId,
           createdAt: serverTimestamp(),
         });
+        toast.success("Transação registrada com sucesso!");
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving transaction:", error);
-      onError?.("Erro ao salvar transação.");
+      const message = error.code === 'permission-denied' 
+        ? "Você não tem permissão para realizar esta ação." 
+        : "Erro ao salvar transação. Tente novamente.";
+      toast.error(message);
+      onError?.(message);
     } finally {
       setLoading(false);
     }
@@ -729,6 +786,12 @@ export const MemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!item) return; // Invite mode doesn't submit a form
+    
+    if (!churchId) {
+      toast.error("ID da igreja não encontrado. Por favor, faça login novamente.");
+      return;
+    }
+
     setLoading(true);
     try {
       if (item?.uid) {
@@ -740,12 +803,17 @@ export const MemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onClose
           tags: tags.split(',').map(t => t.trim()).filter(t => t),
           updatedAt: serverTimestamp(),
         });
+        toast.success("Membro atualizado com sucesso!");
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving member:", error);
-      onError?.("Erro ao salvar membro.");
+      const message = error.code === 'permission-denied' 
+        ? "Você não tem permissão para realizar esta ação." 
+        : "Erro ao salvar membro. Tente novamente.";
+      toast.error(message);
+      onError?.(message);
     } finally {
       setLoading(false);
     }
@@ -900,6 +968,16 @@ export const AddEBDTrackModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name) {
+      toast.error("Por favor, preencha o nome da trilha.");
+      return;
+    }
+
+    if (!churchId) {
+      toast.error("ID da igreja não encontrado. Por favor, faça login novamente.");
+      return;
+    }
+
     setLoading(true);
     try {
       const data = {
@@ -912,17 +990,23 @@ export const AddEBDTrackModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
 
       if (item?.id) {
         await updateDoc(doc(db, 'ebd_tracks', item.id), data);
+        toast.success("Trilha atualizada com sucesso!");
       } else {
         await addDoc(collection(db, 'ebd_tracks'), {
           ...data,
           createdAt: serverTimestamp(),
         });
+        toast.success("Trilha criada com sucesso!");
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving EBD track:", error);
-      onError?.("Erro ao salvar trilha.");
+      const message = error.code === 'permission-denied' 
+        ? "Você não tem permissão para realizar esta ação." 
+        : "Erro ao salvar trilha. Tente novamente.";
+      toast.error(message);
+      onError?.(message);
     } finally {
       setLoading(false);
     }

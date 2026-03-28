@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 
 // Layouts
 const PublicLayout = lazy(() => import('./layouts/PublicLayout'));
@@ -52,6 +53,7 @@ const LoadingFallback = () => (
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {/* Public Routes (SaaS Landing Page, Login, Register) */}

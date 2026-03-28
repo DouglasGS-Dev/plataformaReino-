@@ -179,24 +179,24 @@ service cloud.firestore {
     }
     
     function isValidEBDTrack(data) {
-      return hasRequiredFields(['id', 'churchId', 'name', 'order', 'createdAt']) &&
-             data.id is string && data.churchId is string &&
+      return hasRequiredFields(['churchId', 'name', 'order', 'createdAt']) &&
+             data.churchId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.order is number &&
              data.createdAt is timestamp;
     }
 
     function isValidEBDCourse(data) {
-      return hasRequiredFields(['id', 'trackId', 'churchId', 'name', 'order', 'createdAt']) &&
-             data.id is string && data.trackId is string && data.churchId is string &&
+      return hasRequiredFields(['trackId', 'churchId', 'name', 'order', 'createdAt']) &&
+             data.trackId is string && data.churchId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.order is number &&
              data.createdAt is timestamp;
     }
 
     function isValidEBDClass(data) {
-      return hasRequiredFields(['id', 'churchId', 'name', 'teacherId', 'teacherName', 'createdAt']) &&
-             data.id is string && data.churchId is string &&
+      return hasRequiredFields(['churchId', 'name', 'teacherId', 'teacherName', 'createdAt']) &&
+             data.churchId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.teacherId is string && data.teacherName is string &&
              data.createdAt is timestamp &&
@@ -206,8 +206,8 @@ service cloud.firestore {
     }
 
     function isValidEBDLesson(data) {
-      return hasRequiredFields(['id', 'classId', 'title', 'content', 'order', 'createdAt']) &&
-             data.id is string && data.classId is string &&
+      return hasRequiredFields(['classId', 'title', 'content', 'order', 'createdAt']) &&
+             data.classId is string &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
              data.order is number &&
@@ -216,8 +216,8 @@ service cloud.firestore {
     }
 
     function isValidEBDEnrollment(data) {
-      return hasRequiredFields(['id', 'classId', 'studentId', 'status', 'progress', 'enrolledAt']) &&
-             data.id is string && data.classId is string &&
+      return hasRequiredFields(['classId', 'studentId', 'status', 'progress', 'enrolledAt']) &&
+             data.classId is string &&
              data.studentId is string &&
              data.status in ['active', 'completed'] &&
              data.progress is number && data.progress >= 0 && data.progress <= 100 &&
@@ -225,8 +225,8 @@ service cloud.firestore {
     }
 
     function isValidEBDProgress(data) {
-      return hasRequiredFields(['id', 'enrollmentId', 'lessonId', 'completed']) &&
-             data.id is string && data.enrollmentId is string &&
+      return hasRequiredFields(['enrollmentId', 'lessonId', 'completed']) &&
+             data.enrollmentId is string &&
              data.lessonId is string &&
              data.completed is bool &&
              (!('completedAt' in data) || data.completedAt is timestamp);
@@ -263,38 +263,45 @@ service cloud.firestore {
     }
 
     function isValidMinistry(data) {
-      return hasRequiredFields(['id', 'churchId', 'name', 'leaderId', 'createdAt']) &&
-             data.id is string && data.churchId is string &&
+      return hasRequiredFields(['churchId', 'name', 'leaderName', 'createdAt']) &&
+             data.churchId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.leaderId is string &&
+             data.leaderName is string &&
+             (!('description' in data) || (data.description is string && data.description.size() < 1000)) &&
+             (!('memberCount' in data) || data.memberCount is number) &&
              (!('members' in data) || data.members is list) &&
              data.createdAt is timestamp;
     }
 
     function isValidCell(data) {
-      return hasRequiredFields(['id', 'churchId', 'name', 'leaderId', 'createdAt']) &&
-             data.id is string && data.churchId is string &&
+      return hasRequiredFields(['churchId', 'name', 'leaderName', 'createdAt']) &&
+             data.churchId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.leaderId is string &&
+             data.leaderName is string &&
+             (!('host' in data) || data.host is string) &&
+             (!('meetingDay' in data) || data.meetingDay is string) &&
+             (!('meetingTime' in data) || data.meetingTime is string) &&
+             (!('address' in data) || data.address is string) &&
+             (!('memberCount' in data) || data.memberCount is number) &&
              (!('members' in data) || data.members is list) &&
              data.createdAt is timestamp;
     }
 
     function isValidEvent(data) {
-      return hasRequiredFields(['id', 'churchId', 'title', 'date', 'createdAt']) &&
-             data.id is string && data.churchId is string &&
+      return hasRequiredFields(['churchId', 'title', 'date', 'createdAt']) &&
+             data.churchId is string &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
-             data.date is timestamp &&
+             (data.date is timestamp || data.date is string) &&
              data.createdAt is timestamp;
     }
 
     function isValidFinancialTransaction(data) {
-      return hasRequiredFields(['id', 'churchId', 'amount', 'type', 'category', 'date', 'createdAt']) &&
-             data.id is string && data.churchId is string &&
+      return hasRequiredFields(['churchId', 'amount', 'type', 'category', 'date', 'createdAt']) &&
+             data.churchId is string &&
              data.amount is number &&
              data.type in ['income', 'expense'] &&
              data.category is string &&
-             data.date is timestamp &&
+             (data.date is timestamp || data.date is string) &&
              data.createdAt is timestamp;
     }
 
@@ -322,8 +329,7 @@ service cloud.firestore {
     }
 
     function isValidMarketplaceItem(data) {
-      return hasRequiredFields(['id', 'churchId', 'authorId', 'authorName', 'title', 'description', 'category', 'status', 'createdAt']) &&
-             data.id is string &&
+      return hasRequiredFields(['churchId', 'authorId', 'authorName', 'title', 'description', 'category', 'status', 'createdAt']) &&
              data.churchId is string &&
              data.authorId is string &&
              data.authorName is string &&
@@ -338,11 +344,10 @@ service cloud.firestore {
     }
 
     function isValidVisitor(data) {
-      return hasRequiredFields(['id', 'churchId', 'name', 'visitDate', 'status', 'createdAt']) &&
-             data.id is string &&
+      return hasRequiredFields(['churchId', 'name', 'visitDate', 'status', 'createdAt']) &&
              data.churchId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.visitDate is timestamp &&
+             (data.visitDate is timestamp || data.visitDate is string) &&
              data.status in ["new", "followed_up", "member", "inactive"] &&
              data.createdAt is timestamp &&
              (!('phone' in data) || data.phone is string) &&

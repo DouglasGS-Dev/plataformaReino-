@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, MoreVertical, Users, MapPin, Calendar, Clock, User as UserIcon } from 'lucide-react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { Search, Plus, Filter, MoreVertical, Users, MapPin, Calendar, Clock, User as UserIcon, Trash2 } from 'lucide-react';
+import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { CellModal } from '../../components/AdminModals';
+import { toast } from 'sonner';
 
 interface Cell {
   id: string;
@@ -83,6 +84,18 @@ export default function Cells() {
     return () => unsubscribe();
   }, [churchId]);
 
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir esta célula?')) {
+      try {
+        await deleteDoc(doc(db, 'cells', id));
+        toast.success("Célula excluída com sucesso!");
+      } catch (error) {
+        console.error("Error deleting cell:", error);
+        toast.error("Erro ao excluir célula.");
+      }
+    }
+  };
+
   const filteredCells = cells.filter(cell => 
     cell.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cell.leaderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -132,8 +145,11 @@ export default function Cells() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCells.map((cell) => (
                 <div key={cell.id} className="group bg-white border border-slate-200 rounded-xl p-5 hover:border-primary/30 hover:shadow-md transition-all relative">
-                  <button className="absolute top-4 right-4 text-slate-400 hover:text-primary transition-colors p-1 rounded-lg hover:bg-slate-50">
-                    <MoreVertical className="w-5 h-5" />
+                  <button 
+                    onClick={() => handleDelete(cell.id)}
+                    className="absolute top-4 right-4 text-slate-400 hover:text-red-600 transition-colors p-1 rounded-lg hover:bg-slate-50"
+                  >
+                    <Trash2 className="w-5 h-5" />
                   </button>
                   
                   <div className="flex items-start gap-4 mb-4">

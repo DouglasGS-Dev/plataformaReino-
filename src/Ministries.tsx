@@ -6,6 +6,7 @@ import { collection, query, where, onSnapshot, orderBy, deleteDoc, doc } from 'f
 import { db } from './firebase';
 import { AddMinistryModal } from './components/AdminModals';
 import { Ministry } from './types';
+import { toast } from 'sonner';
 
 export default function Ministries() {
   const { churchId } = useOutletContext<{ churchId: string }>();
@@ -40,8 +41,10 @@ export default function Ministries() {
     if (window.confirm('Tem certeza que deseja excluir este ministério?')) {
       try {
         await deleteDoc(doc(db, 'ministries', id));
+        toast.success("Ministério excluído com sucesso!");
       } catch (error) {
         console.error("Error deleting ministry:", error);
+        toast.error("Erro ao excluir ministério.");
       }
     }
   };
