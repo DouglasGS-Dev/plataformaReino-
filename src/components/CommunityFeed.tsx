@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageCircle, Heart, Share2, Send, User, Sparkles, Shield, Megaphone, PenTool, Trash2, Image as ImageIcon, Video, X, ChevronLeft, ChevronRight, Maximize2, BookOpen, Play, Pause, Volume2, VolumeX, Clock, Crop, Scissors, Check, CheckCircle2, Layout } from 'lucide-react';
 import { db, auth, storage, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Post, PostMedia, Comment } from '../types';
 import { compressImage, formatFileSize } from '../utils/media';
 import { MediaCarousel } from './MediaCarousel';
@@ -293,7 +293,8 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   const [commentingOn, setCommentingOn] = useState<string | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [showRecoveryToast, setShowRecoveryToast] = useState(false);
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressingCount, setCompressingCount] = useState(0);
+  const isCompressing = compressingCount > 0;
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -315,12 +316,215 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [commentToDelete, setCommentToDelete] = useState<{ postId: string, commentId: string } | null>(null);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const addMoreInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFile = async (file: File, index?: number) => {
+    const fileId = `media_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    console.log('Iniciando uploadFile:', { 
+      fileId,
+      fileName: file.name, 
+      fileSize: file.size, 
+      fileType: file.type,
+      churchId,
+      userId: auth.currentUser?.uid 
+    });
+
+    if (!churchId) {
+      const errorMsg = "Erro: ID da igreja não encontrado.";
+      console.error(errorMsg);
+      setMediaError(errorMsg);
+      return;
+    }
+
+    if (!auth.currentUser) {
+      const errorMsg = "Erro: Usuário não autenticado.";
+      console.error(errorMsg);
+      setMediaError(errorMsg);
+      return;
+    }
+
+    const type = file.type.startsWith('video') ? 'video' : 'image';
+    let fileToUpload: File | Blob = file;
+    let base64Fallback: string | null = null;
+
+    try {
+      // Processamento inicial (compressão para imagens)
+      if (type === 'image') {
+        setCompressingCount(prev => prev + 1);
+        try {
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+          });
+          reader.readAsDataURL(file);
+          const base64Str = await base64Promise;
+          
+          console.log('Comprimindo imagem...');
+          const compressedBase64 = await compressImage(base64Str);
+          base64Fallback = compressedBase64; 
+          
+          // Se a imagem for pequena o suficiente, usamos Base64 direto para evitar problemas de rede
+          if (compressedBase64.length < 500 * 1024) {
+             console.log('Imagem pequena, usando Base64 direto para maior velocidade');
+             const mediaItem: PostMedia = {
+               url: compressedBase64,
+               type: 'image',
+               objectFit: 'cover',
+               id: fileId,
+               name: file.name,
+               size: file.size
+             };
+             setSelectedMedia(prev => [...prev, mediaItem]);
+             setCompressingCount(prev => Math.max(0, prev - 1));
+             return; // Finaliza aqui, não precisa de Storage
+          }
+
+          const byteString = atob(compressedBase64.split(',')[1]);
+          const mimeString = compressedBase64.split(',')[0].split(':')[1].split(';')[0];
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          fileToUpload = new Blob([ab], { type: mimeString });
+        } catch (err) {
+          console.warn('Falha na compressão, usando arquivo original:', err);
+        } finally {
+          setCompressingCount(prev => Math.max(0, prev - 1));
+        }
+      }
+
+      // Tentar upload para o Firebase Storage
+      console.log('Tentando upload para Storage no bucket:', storage.app.options.storageBucket);
+      const storagePath = `churches/${churchId}/posts/${fileId}`;
+      const storageRef = ref(storage, storagePath);
+      const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
+
+      setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+
+      const downloadUrl = await new Promise<string>((resolve, reject) => {
+        // Timeout diferenciado: 30s para fotos (fallback), 5min para vídeos
+        const timeoutDuration = type === 'image' ? 30000 : 300000;
+        
+        const timeoutId = setTimeout(() => {
+          if (type === 'image' && base64Fallback) {
+            console.log('Timeout no Storage, usando fallback Base64');
+            uploadTask.cancel();
+            resolve(base64Fallback);
+          } else {
+            uploadTask.cancel();
+            reject(new Error('O upload está demorando mais que o esperado. Verifique sua conexão ou tente um arquivo menor.'));
+          }
+        }, timeoutDuration);
+
+        uploadTask.on('state_changed', 
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log(`Progresso do upload (${fileId}): ${progress}%`);
+            setUploadProgress(prev => ({ ...prev, [fileId]: Math.round(progress) }));
+          }, 
+          (error) => {
+            clearTimeout(timeoutId);
+            console.error('Erro detalhado no Storage:', error.code, error.message);
+            if (type === 'image' && base64Fallback) {
+              console.log('Erro no Storage, usando fallback Base64');
+              resolve(base64Fallback);
+            } else {
+              let msg = 'Erro no upload: ';
+              if (error.code === 'storage/unauthorized') msg += 'Sem permissão no Firebase Storage.';
+              else if (error.code === 'storage/retry-limit-exceeded') msg += 'Falha na conexão com o servidor de arquivos.';
+              else if (error.code === 'storage/unknown') msg += 'O serviço de arquivos (Storage) pode não estar ativado no Firebase.';
+              else msg += error.message;
+              reject(new Error(msg));
+            }
+          }, 
+          async () => {
+            clearTimeout(timeoutId);
+            try {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            } catch (err) {
+              if (type === 'image' && base64Fallback) resolve(base64Fallback);
+              else reject(err);
+            }
+          }
+        );
+      });
+
+      const mediaItem: PostMedia = {
+        url: downloadUrl,
+        type,
+        objectFit: 'cover',
+        id: fileId,
+        name: file.name,
+        size: fileToUpload.size
+      };
+
+      setSelectedMedia(prev => {
+        if (typeof index === 'number') {
+          const next = [...prev];
+          next[index] = mediaItem;
+          return next;
+        }
+        return [...prev, mediaItem];
+      });
+
+      console.log('Upload concluído com sucesso:', downloadUrl);
+
+    } catch (error: any) {
+      console.error('Erro no uploadFile:', error);
+      
+      // Fallback para Base64 se for imagem e o erro for de permissão ou rede
+      if (type === 'image' && base64Fallback && base64Fallback.length < 800 * 1024) {
+        console.log('Usando fallback Base64 para imagem devido a erro no Storage');
+        const mediaItem: PostMedia = {
+          url: base64Fallback,
+          type: 'image',
+          objectFit: 'cover',
+          id: fileId,
+          name: file.name,
+          size: file.size
+        };
+
+        setSelectedMedia(prev => {
+          if (typeof index === 'number') {
+            const next = [...prev];
+            next[index] = mediaItem;
+            return next;
+          }
+          return [...prev, mediaItem];
+        });
+        setMediaError(null); // Limpar erro pois o fallback funcionou
+        return;
+      }
+
+      let message = 'Erro ao carregar arquivo.';
+      if (error.code === 'storage/unauthorized') {
+        message = 'Sem permissão para upload. Verifique as configurações do Firebase Storage.';
+      } else if (error.code === 'storage/canceled') {
+        message = 'Upload cancelado.';
+      } else if (error.message?.includes('Tempo limite')) {
+        message = error.message;
+      }
+      
+      setMediaError(message);
+      throw error;
+    } finally {
+      setUploadProgress(prev => {
+        const next = { ...prev };
+        delete next[fileId];
+        return next;
+      });
+    }
+  };
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
   };
-
-  const [mediaError, setMediaError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!churchId) {
@@ -431,114 +635,37 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || !auth.currentUser) return;
+    console.log('handleFileSelect disparado. Arquivos selecionados:', files?.length || 0);
+    
+    if (!auth.currentUser) {
+      console.error('Usuário não autenticado no handleFileSelect');
+      setMediaError("Você precisa estar logado para enviar arquivos. Tente recarregar a página.");
+      return;
+    }
+
+    if (!files || files.length === 0) return;
     setMediaError(null);
-    setIsCompressing(true);
 
     try {
-      console.log('handleFileSelect started', { churchId, filesCount: files.length });
       if (!churchId) {
         throw new Error('ID da igreja não encontrado. Por favor, recarregue a página.');
       }
 
       const uploadPromises = Array.from(files).map(async (file) => {
-        console.log('Processing file:', file.name, file.size, file.type);
-        
-        // Limit to 100MB
         if (file.size > 100 * 1024 * 1024) {
           setMediaError(`O arquivo "${file.name}" é muito grande. O limite é de 100MB.`);
           return;
         }
-
-        const type = file.type.startsWith('video') ? 'video' : 'image';
-        const fileId = `media_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        const storagePath = `churches/${churchId}/posts/${fileId}`;
-        const storageRef = ref(storage, storagePath);
-
-        let fileToUpload: File | Blob = file;
-        
-        if (type === 'image') {
-          try {
-            const reader = new FileReader();
-            const base64Str = await new Promise<string>((resolve, reject) => {
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(file);
-            });
-            
-            const compressedBase64 = await compressImage(base64Str);
-            
-            // Convert base64 back to Blob
-            const byteString = atob(compressedBase64.split(',')[1]);
-            const mimeString = compressedBase64.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
-            fileToUpload = new Blob([ab], { type: mimeString });
-            console.log(`Compressed ${file.name} from ${file.size} to ${fileToUpload.size}`);
-          } catch (err) {
-            console.error('Error compressing image:', err);
-            // Fallback to original file
-          }
-        }
-
-        console.log('Starting upload to:', storagePath);
-
-        try {
-          // Set initial progress
-          setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
-          
-          const snapshot = await new Promise<any>(async (resolve, reject) => {
-            // 5 minute timeout
-            const timeoutId = setTimeout(() => {
-              reject(new Error('Tempo limite de envio excedido. Verifique sua conexão.'));
-            }, 300000);
-
-            try {
-              const result = await uploadBytes(storageRef, fileToUpload);
-              clearTimeout(timeoutId);
-              resolve(result);
-            } catch (error) {
-              clearTimeout(timeoutId);
-              reject(error);
-            }
-          });
-          
-          // Set progress to 100% when done
-          setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
-          
-          const downloadUrl = await getDownloadURL(snapshot.ref);
-          console.log('Download URL obtained:', downloadUrl);
-          
-          setSelectedMedia(prev => [...prev, { 
-            url: downloadUrl, 
-            type: type as any, 
-            objectFit: 'cover',
-            id: fileId,
-            name: file.name,
-            size: fileToUpload.size
-          }]);
-        } catch (uploadError: any) {
-          console.error('Caught upload error:', uploadError);
-          setMediaError(`Erro ao enviar "${file.name}": ${uploadError.message || 'Erro desconhecido'}`);
-        } finally {
-          setUploadProgress(prev => {
-            const next = { ...prev };
-            delete next[fileId];
-            return next;
-          });
-        }
+        await uploadFile(file);
       });
 
       await Promise.all(uploadPromises);
     } catch (err: any) {
-      console.error('Global error in handleFileSelect:', err);
+      console.error('Erro global no handleFileSelect:', err);
       setMediaError(err.message || 'Erro ao processar mídia. Tente novamente.');
     } finally {
-      console.log('handleFileSelect finished');
-      setIsCompressing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (addMoreInputRef.current) addMoreInputRef.current.value = '';
     }
   };
 
@@ -779,6 +906,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                         <label className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer" title="Substituir">
                           <PenTool size={14} />
                           <input 
+                            ref={replaceInputRef}
                             type="file" 
                             accept="image/*,video/*" 
                             className="hidden" 
@@ -786,94 +914,17 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                               const file = e.target.files?.[0];
                               if (file && auth.currentUser) {
                                 setMediaError(null);
-                                setIsCompressing(true);
                                 try {
-                                  if (!churchId) {
-                                    throw new Error('ID da igreja não encontrado.');
-                                  }
-
                                   if (file.size > 100 * 1024 * 1024) {
                                     setMediaError(`O arquivo "${file.name}" é muito grande. O limite é de 100MB.`);
                                     return;
                                   }
-
-                                  const type = file.type.startsWith('video') ? 'video' : 'image';
-                                  const fileId = `media_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-                                  const storagePath = `churches/${churchId}/posts/${fileId}`;
-                                  const storageRef = ref(storage, storagePath);
-
-                                  let fileToUpload: File | Blob = file;
-                                  
-                                  if (type === 'image') {
-                                    try {
-                                      const reader = new FileReader();
-                                      const base64Str = await new Promise<string>((resolve, reject) => {
-                                        reader.onload = () => resolve(reader.result as string);
-                                        reader.onerror = reject;
-                                        reader.readAsDataURL(file);
-                                      });
-                                      
-                                      const compressedBase64 = await compressImage(base64Str);
-                                      
-                                      const byteString = atob(compressedBase64.split(',')[1]);
-                                      const mimeString = compressedBase64.split(',')[0].split(':')[1].split(';')[0];
-                                      const ab = new ArrayBuffer(byteString.length);
-                                      const ia = new Uint8Array(ab);
-                                      for (let i = 0; i < byteString.length; i++) {
-                                        ia[i] = byteString.charCodeAt(i);
-                                      }
-                                      fileToUpload = new Blob([ab], { type: mimeString });
-                                    } catch (err) {
-                                      console.error('Error compressing image:', err);
-                                    }
-                                  }
-
-                                  setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
-                                  
-                                  try {
-                                    const snapshot = await new Promise<any>(async (resolve, reject) => {
-                                      const timeoutId = setTimeout(() => {
-                                        reject(new Error('Tempo limite de envio excedido. Verifique sua conexão.'));
-                                      }, 300000);
-
-                                      try {
-                                        const result = await uploadBytes(storageRef, fileToUpload);
-                                        clearTimeout(timeoutId);
-                                        resolve(result);
-                                      } catch (error) {
-                                        clearTimeout(timeoutId);
-                                        reject(error);
-                                      }
-                                    });
-
-                                    setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
-                                    
-                                    const downloadUrl = await getDownloadURL(snapshot.ref);
-                                    const newMedia = [...selectedMedia];
-                                    newMedia[index] = { 
-                                      url: downloadUrl, 
-                                      type: type as any, 
-                                      objectFit: 'cover',
-                                      id: fileId,
-                                      name: file.name,
-                                      size: fileToUpload.size
-                                    };
-                                    setSelectedMedia(newMedia);
-                                  } catch (err) {
-                                    console.error('Replace upload error:', err);
-                                    throw err;
-                                  }
-
-                                  setUploadProgress(prev => {
-                                    const next = { ...prev };
-                                    delete next[fileId];
-                                    return next;
-                                  });
+                                  await uploadFile(file, index);
                                 } catch (err: any) {
                                   console.error('Error replacing media:', err);
                                   setMediaError(err.message || 'Erro ao substituir mídia.');
                                 } finally {
-                                  setIsCompressing(false);
+                                  if (replaceInputRef.current) replaceInputRef.current.value = '';
                                 }
                               }
                             }} 
@@ -898,7 +949,14 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                 <label className="relative aspect-square rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-primary-200 hover:text-primary hover:bg-primary-50 transition-all cursor-pointer">
                   <ImageIcon size={24} />
                   <span className="text-[10px] font-bold uppercase tracking-wider">Adicionar</span>
-                  <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileSelect} />
+                  <input 
+                    ref={addMoreInputRef}
+                    type="file" 
+                    accept="image/*,video/*" 
+                    multiple 
+                    className="hidden" 
+                    onChange={handleFileSelect} 
+                  />
                 </label>
               </div>
             )}
@@ -913,16 +971,10 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                     </div>
                     <div className="h-1.5 bg-primary-100 rounded-full overflow-hidden relative">
                       <motion.div 
-                        className="absolute top-0 bottom-0 left-0 bg-primary rounded-full"
-                        animate={{ 
-                          left: ["-100%", "100%"],
-                          width: ["50%", "50%"]
-                        }}
-                        transition={{ 
-                          repeat: Infinity, 
-                          duration: 1.5,
-                          ease: "linear"
-                        }}
+                        className="absolute top-0 bottom-0 left-0 bg-primary rounded-full h-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.3 }}
                       />
                     </div>
                   </div>
@@ -978,7 +1030,14 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
           <div className="flex flex-wrap gap-2">
             <label className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 cursor-pointer transition-all">
               <ImageIcon size={16} />
-              <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileSelect} />
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                accept="image/*,video/*" 
+                multiple 
+                className="hidden" 
+                onChange={handleFileSelect} 
+              />
               Mídia
             </label>
             {(['prayer', 'testimony', 'announcement'] as const).filter(type => type !== 'announcement' || userRole === 'admin' || userRole === 'leader').map(type => {

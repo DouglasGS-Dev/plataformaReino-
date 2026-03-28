@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { X, Sparkles, Book, Info, Star, Zap, Shield, Mountain, Target, HandHeart, CheckCircle2, Lightbulb, Heart, MessageCircle, Trash2, Image as ImageIcon, Megaphone } from 'lucide-react';
+import { X, Sparkles, Book, Info, Star, Zap, Shield, Mountain, Target, HandHeart, CheckCircle2, Lightbulb, Heart, MessageCircle, Trash2, Image as ImageIcon, Megaphone, Bell } from 'lucide-react';
 import { Category, Impact, SpiritualEntry, PostMedia } from '../types';
 import { compressImage } from '../utils/media';
 import { BaseModal } from './BaseModal';
@@ -67,6 +67,7 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
   const [shareWithCommunity, setShareWithCommunity] = useState(initialEntry?.shareWithCommunity || false);
   const [selectedMedia, setSelectedMedia] = useState<PostMedia[]>(initialEntry?.media || []);
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '16:9' | '9:16'>(initialEntry?.aspectRatio || '16:9');
+  const [reminderAt, setReminderAt] = useState(initialEntry?.reminderAt || '');
   const [mediaError, setMediaError] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,6 +143,7 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
         impact,
         isMemorial,
         shareWithCommunity,
+        reminderAt: reminderAt || null,
         media: selectedMedia.length > 0 ? selectedMedia : null,
         aspectRatio: selectedMedia.length > 0 ? aspectRatio : null
       }, initialEntry?.id);
@@ -377,6 +379,32 @@ export default function DiaryEntryForm({ onSave, onClose, initialCategory, initi
                     Memorial Espiritual
                   </button>
                 </div>
+              </div>
+
+              <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white text-primary flex items-center justify-center shadow-sm">
+                    <Bell size={20} />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-primary-900">Lembrete Personalizado</h4>
+                    <input 
+                      type="datetime-local"
+                      value={reminderAt}
+                      onChange={(e) => setReminderAt(e.target.value)}
+                      className="mt-1 bg-transparent border-none outline-none text-xs text-primary font-medium w-full"
+                    />
+                  </div>
+                </div>
+                {reminderAt && (
+                  <button 
+                    type="button"
+                    onClick={() => setReminderAt('')}
+                    className="p-1 text-primary hover:bg-primary-100 rounded-full transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
               <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100 flex items-center justify-between">

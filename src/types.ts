@@ -24,6 +24,7 @@ export interface SpiritualEntry {
   isMemorial: boolean;
   media?: PostMedia[];
   aspectRatio?: '1:1' | '4:5' | '16:9' | '9:16';
+  reminderAt?: string;
   shareWithCommunity?: boolean;
   createdAt?: any;
   updatedAt?: any;
@@ -262,6 +263,33 @@ export interface PrayerRequest {
   testimony?: string;
   createdAt: any;
   answeredAt?: any;
+}
+
+export interface Visitor {
+  id: string;
+  churchId: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  visitDate: any;
+  invitedBy?: string;
+  status: 'new' | 'followed_up' | 'member' | 'inactive';
+  integrationStep: 'first_visit' | 'contacted' | 'visited_cell' | 'enrolled_class' | 'converted';
+  notes?: string;
+  createdAt: any;
+  updatedAt?: any;
+}
+
+export interface VisitorFollowUp {
+  id: string;
+  visitorId: string;
+  churchId: string;
+  date: any;
+  type: 'call' | 'message' | 'visit' | 'other';
+  notes: string;
+  performedBy: string;
+  performedByName: string;
+  createdAt: any;
 }
 
 export interface Intercession {

@@ -344,16 +344,29 @@ service cloud.firestore {
     }
 
     function isValidVisitor(data) {
-      return hasRequiredFields(['churchId', 'name', 'visitDate', 'status', 'createdAt']) &&
+      return hasRequiredFields(['churchId', 'name', 'visitDate', 'status', 'integrationStep', 'createdAt']) &&
              data.churchId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              (data.visitDate is timestamp || data.visitDate is string) &&
              data.status in ["new", "followed_up", "member", "inactive"] &&
+             data.integrationStep in ['first_visit', 'contacted', 'visited_cell', 'enrolled_class', 'converted'] &&
              data.createdAt is timestamp &&
              (!('phone' in data) || data.phone is string) &&
              (!('email' in data) || data.email is string) &&
              (!('invitedBy' in data) || data.invitedBy is string) &&
              (!('notes' in data) || data.notes is string);
+    }
+
+    function isValidVisitorFollowUp(data) {
+      return hasRequiredFields(['visitorId', 'churchId', 'date', 'type', 'notes', 'performedBy', 'performedByName', 'createdAt']) &&
+             data.visitorId is string &&
+             data.churchId is string &&
+             (data.date is timestamp || data.date is string) &&
+             data.type in ['call', 'message', 'visit', 'other'] &&
+             data.notes is string &&
+             data.performedBy is string &&
+             data.performedByName is string &&
+             data.createdAt is timestamp;
     }
     
     function isValidCellChatMessage(data) {
@@ -581,6 +594,13 @@ service cloud.firestore {
       allow read: if isChurchAdmin(resource.data.churchId);
       allow create: if isChurchAdmin(request.resource.data.churchId) && isValidVisitor(request.resource.data);
       allow update: if isChurchAdmin(resource.data.churchId) && isValidVisitor(request.resource.data);
+      allow delete: if isChurchAdmin(resource.data.churchId);
+    }
+
+    match /visitor_follow_ups/{followUpId} {
+      allow read: if isChurchAdmin(resource.data.churchId);
+      allow create: if isChurchAdmin(request.resource.data.churchId) && isValidVisitorFollowUp(request.resource.data);
+      allow update: if isChurchAdmin(resource.data.churchId) && isValidVisitorFollowUp(request.resource.data);
       allow delete: if isChurchAdmin(resource.data.churchId);
     }
   }

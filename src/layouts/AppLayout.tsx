@@ -8,11 +8,12 @@ import {
 } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, signOut, User, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
-import { UserProfile } from '../types';
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp, collection, query, where } from 'firebase/firestore';
+import { UserProfile, SpiritualEntry } from '../types';
 import LoginModal from '../components/LoginModal';
 import EnvironmentSwitcher from '../components/EnvironmentSwitcher';
 import { Logo } from '../components/Logo';
+import { NotificationService } from '../services/notificationService';
 
 export default function AppLayout() {
   const [user, setUser] = useState<User | null>(null);
@@ -34,6 +35,40 @@ export default function AppLayout() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const diaryRef = collection(db, 'spiritual_entries');
+    const q = query(diaryRef, where('userId', '==', user.uid));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const now = new Date();
+      snapshot.docs.forEach(docSnap => {
+        const entry = docSnap.data() as SpiritualEntry;
+        if (entry.reminderAt) {
+          const reminderDate = new Date(entry.reminderAt);
+          const diff = now.getTime() - reminderDate.getTime();
+          
+          // If reminder is due (within last 5 minutes) and not yet notified
+          if (diff > 0 && diff < 300000) {
+             const notifiedKey = `notified_${docSnap.id}_${entry.reminderAt}`;
+             if (!localStorage.getItem(notifiedKey)) {
+               NotificationService.sendNotification(
+                 `Lembrete: ${entry.title}`,
+                 `Está na hora da sua oração ou marco espiritual: ${entry.description.substring(0, 50)}...`
+               );
+               localStorage.setItem(notifiedKey, 'true');
+             }
+          }
+        }
+      });
+    }, (error) => {
+      console.error("Diary snapshot error for reminders:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     if (!user) {

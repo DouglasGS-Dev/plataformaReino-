@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, Sparkles, Shield, Mountain, Target, HandHeart, 
   CheckCircle2, Lightbulb, Heart, MessageCircle, Search, 
-  Filter, X, CheckCircle2 as CheckIcon, PenTool
+  Filter, X, CheckCircle2 as CheckIcon, PenTool, Bell
 } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { SpiritualEntry, Category, UserProfile } from '../../types';
 import { User } from 'firebase/auth';
+import { NotificationService } from '../../services/notificationService';
 
 const DiaryEntryForm = lazy(() => import('../../components/DiaryEntryForm'));
 
@@ -39,6 +40,19 @@ export default function Diary() {
   const [editingEntry, setEditingEntry] = useState<SpiritualEntry | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
+    'Notification' in window ? Notification.permission : 'denied'
+  );
+
+  const handleRequestPermission = async () => {
+    const granted = await NotificationService.requestPermission();
+    if (granted) {
+      setNotificationPermission('granted');
+      showToast('Notificações ativadas!');
+    } else {
+      showToast('Permissão de notificação negada.', 'error');
+    }
+  };
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -178,9 +192,23 @@ export default function Diary() {
       </AnimatePresence>
 
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Meu Diário</h2>
-          <p className="text-slate-500">Registre o que Deus tem feito em sua vida.</p>
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Meu Diário</h2>
+            <p className="text-slate-500">Registre o que Deus tem feito em sua vida.</p>
+          </div>
+          {notificationPermission === 'denied' ? (
+            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl border border-red-200 text-xs font-medium">
+              <Bell size={14} /> Notificações bloqueadas. Clique no cadeado na barra de endereços para liberar.
+            </div>
+          ) : notificationPermission !== 'granted' && (
+            <button 
+              onClick={handleRequestPermission}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-200 text-sm font-medium hover:bg-amber-100 transition-all w-fit group"
+            >
+              <Bell size={16} className="group-hover:animate-bounce" /> Ativar Lembretes
+            </button>
+          )}
         </div>
         <button 
           onClick={() => {
@@ -261,12 +289,22 @@ export default function Diary() {
                 {entry.description}
               </p>
               
-              {entry.isMemorial && (
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-amber-600">
-                  <Sparkles size={14} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Memorial</span>
-                </div>
-              )}
+              <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
+                {entry.isMemorial && (
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <Sparkles size={14} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Memorial</span>
+                  </div>
+                )}
+                {entry.reminderAt && (
+                  <div className="flex items-center gap-2 text-primary">
+                    <Bell size={14} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">
+                      Lembrete: {new Date(entry.reminderAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                    </span>
+                  </div>
+                )}
+              </div>
             </motion.div>
           ))
         )}
