@@ -14,7 +14,7 @@ export default function PublicLayout() {
           <nav className="flex items-center gap-6">
             <Link to="/features" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">Recursos</Link>
             <Link to="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">Preços</Link>
-            <Link to="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">Entrar</Link>
+            <Link to="/church-login" className="text-sm font-medium text-slate-600 hover:text-slate-900">Entrar</Link>
             <Link to="/register" className="btn-primary text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               Criar Igreja
             </Link>

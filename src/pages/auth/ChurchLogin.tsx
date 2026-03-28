@@ -170,41 +170,37 @@ export default function ChurchLoginPage() {
             <p className="text-slate-500">Entre com suas credenciais de líder ou pastor.</p>
           </div>
 
-          <AnimatePresence mode="wait">
+          <div className="space-y-4">
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+              <div 
                 className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 text-red-600 text-sm"
+                translate="no"
               >
                 <AlertCircle size={18} className="shrink-0 mt-0.5" />
-                <p>{error}</p>
-              </motion.div>
+                <span>{error}</span>
+              </div>
             )}
 
             {success && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
+              <div 
                 className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3 text-emerald-600 text-sm"
+                translate="no"
               >
                 <CheckCircle2 size={18} className="shrink-0 mt-0.5" />
-                <p>Login realizado com sucesso! Redirecionando...</p>
-              </motion.div>
+                <span>Login realizado com sucesso! Redirecionando...</span>
+              </div>
             )}
 
             {resetSent && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
+              <div 
                 className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-start gap-3 text-primary text-sm"
+                translate="no"
               >
                 <CheckCircle2 size={18} className="shrink-0 mt-0.5" />
-                <p>E-mail de redefinição enviado! Verifique sua caixa de entrada.</p>
-              </motion.div>
+                <span>E-mail de redefinição enviado! Verifique sua caixa de entrada.</span>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
