@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { 
   User as UserIcon, Mail, Camera, Save, 
-  LogOut, Shield, Bell, Globe, CheckCircle2,
-  ChevronRight, AlertCircle, Trash2
+  LogOut, Shield, Bell, CheckCircle2,
+  ChevronRight, AlertCircle, Trash2, Upload
 } from 'lucide-react';
 import { updateProfile, User } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, auth, storage, handleFirestoreError, OperationType } from '../../firebase';
 import { UserProfile } from '../../types';
 
 export default function ProfilePage() {
@@ -21,7 +22,9 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -33,6 +36,38 @@ export default function ProfilePage() {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Por favor, selecione uma imagem válida.', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('A imagem deve ter no máximo 5MB.', 'error');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const storageRef = ref(storage, `profiles/${user.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      setPhotoURL(downloadURL);
+      showToast('Imagem carregada com sucesso! Clique em Salvar Alterações.');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showToast('Erro ao fazer upload da imagem.', 'error');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSave = async () => {
@@ -106,16 +141,33 @@ export default function ProfilePage() {
           <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
             <div className="flex items-center gap-6">
               <div className="relative group">
-                <div className="w-24 h-24 rounded-3xl bg-primary-50 border-2 border-primary-100 overflow-hidden flex items-center justify-center">
+                <div className="w-24 h-24 rounded-3xl bg-primary-50 border-2 border-primary-100 overflow-hidden flex items-center justify-center relative">
+                  {isUploading ? (
+                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : null}
                   {photoURL ? (
                     <img src={photoURL} alt={displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
                     <UserIcon size={40} className="text-primary-300" />
                   )}
                 </div>
-                <button className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl border border-slate-200 shadow-sm text-slate-500 hover:text-primary transition-colors">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl border border-slate-200 shadow-sm text-slate-500 hover:text-primary transition-colors disabled:opacity-50"
+                  title="Alterar foto"
+                >
                   <Camera size={16} />
                 </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-slate-900">{displayName || 'Usuário'}</h3>
@@ -151,20 +203,6 @@ export default function ProfilePage() {
                     className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 outline-none cursor-not-allowed text-sm"
                   />
                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">URL da Foto</label>
-              <div className="relative">
-                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                  type="text"
-                  value={photoURL}
-                  onChange={(e) => setPhotoURL(e.target.value)}
-                  placeholder="https://exemplo.com/foto.jpg"
-                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary outline-none transition-all text-sm"
-                />
               </div>
             </div>
 
