@@ -25,7 +25,11 @@ import {
   Globe, 
   Send,
   X,
-  ChevronRight
+  ChevronRight,
+  Users,
+  DollarSign,
+  Sparkles,
+  MoreHorizontal
 } from 'lucide-react';
 import { Toast } from './UIComponents';
 
@@ -35,6 +39,14 @@ interface PrayerWallProps {
 }
 
 const CATEGORIES = ["Saúde", "Família", "Finanças", "Espiritual", "Outros"] as const;
+
+const CATEGORY_ICONS: Record<string, React.ReactElement> = {
+  "Saúde": <Heart size={16} />,
+  "Família": <Users size={16} />,
+  "Finanças": <DollarSign size={16} />,
+  "Espiritual": <Sparkles size={16} />,
+  "Outros": <MoreHorizontal size={16} />
+};
 
 export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
@@ -189,14 +201,14 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
   return (
     <div className="space-y-6">
       {/* Header & Filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Mural de Oração</h2>
-          <p className="text-slate-500 text-sm">Interceda pelos irmãos e compartilhe suas vitórias.</p>
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Mural de Oração</h2>
+          <p className="text-sm text-slate-500">Interceda pelos irmãos e compartilhe suas vitórias.</p>
         </div>
         <button 
           onClick={() => setShowCreateModal(true)}
-          className="w-full md:w-auto flex items-center justify-center gap-2 bg-primary hover:opacity-90 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-primary/20"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:opacity-90 sm:w-auto"
         >
           <Plus size={20} />
           Novo Pedido
@@ -204,27 +216,29 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
       </div>
 
       {/* Category Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2">
         <button
           onClick={() => setFilter('Todos')}
-          className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition-all ${
             filter === 'Todos' 
               ? 'bg-primary text-white shadow-md' 
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-100'
+              : 'border border-slate-100 bg-white text-slate-600 hover:bg-slate-50'
           }`}
         >
+          <Heart size={16} />
           Todos
         </button>
         {CATEGORIES.map(cat => (
           <button
             key={cat}
             onClick={() => setFilter(cat)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+            className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition-all ${
               filter === cat 
                 ? 'bg-primary text-white shadow-md' 
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-100'
+                : 'border border-slate-100 bg-white text-slate-600 hover:bg-slate-50'
             }`}
           >
+            {CATEGORY_ICONS[cat]}
             {cat}
           </button>
         ))}
@@ -232,35 +246,35 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
 
       {/* Prayers Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-48 bg-white rounded-3xl animate-pulse border border-slate-100"></div>
+            <div key={i} className="h-48 animate-pulse rounded-3xl border border-slate-100 bg-white"></div>
           ))}
         </div>
       ) : filteredPrayers.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-          <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="rounded-3xl border border-dashed border-slate-200 bg-white py-20 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-300">
             <Heart size={32} />
           </div>
-          <p className="text-slate-500 font-medium">Nenhum pedido encontrado nesta categoria.</p>
+          <p className="font-medium text-slate-500">Nenhum pedido encontrado nesta categoria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
           <AnimatePresence mode="popLayout">
             {filteredPrayers.map((prayer) => (
               <motion.div
                 key={prayer.id}
                 layout
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className={`group relative bg-white rounded-3xl p-6 border transition-all hover:shadow-xl hover:-translate-y-1 ${
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`group relative rounded-3xl border bg-white p-4 transition-all hover:-translate-y-1 hover:shadow-xl sm:p-6 ${
                   prayer.status === 'answered' ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-100'
                 }`}
               >
                 {/* Status Badge */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                <div className="mb-4 flex items-center justify-between">
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${
                     prayer.status === 'answered' 
                       ? 'bg-emerald-100 text-emerald-700' 
                       : 'bg-primary-50 text-primary'
@@ -268,7 +282,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                     {prayer.status === 'answered' ? 'Oração Respondida' : prayer.category}
                   </span>
                   {prayer.isPrivate && (
-                    <div className="flex items-center gap-1 text-amber-600 text-[10px] font-bold uppercase">
+                    <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-amber-600">
                       <Lock size={12} />
                       Confidencial
                     </div>
@@ -276,13 +290,13 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                 </div>
 
                 {/* Content */}
-                <p className="text-slate-700 leading-relaxed mb-6 font-medium">
+                <p className="mb-6 font-medium leading-relaxed text-slate-700">
                   "{prayer.content}"
                 </p>
 
                 {prayer.status === 'answered' && prayer.testimony && (
-                  <div className="mb-6 p-4 bg-white/60 rounded-2xl border border-emerald-100 italic text-slate-600 text-sm">
-                    <div className="flex items-center gap-2 text-emerald-600 font-bold mb-1 not-italic text-xs">
+                  <div className="mb-6 rounded-2xl border border-emerald-100 bg-white/60 p-4 text-sm italic text-slate-600">
+                    <div className="mb-1 flex items-center gap-2 text-xs font-bold text-emerald-600 not-italic">
                       <CheckCircle2 size={14} />
                       Testemunho:
                     </div>
@@ -291,12 +305,12 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                 )}
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                <div className="flex items-center justify-between border-t border-slate-50 pt-4">
                   <div className="flex items-center gap-3">
                     <img 
                       src={prayer.authorPhoto || `https://ui-avatars.com/api/?name=${prayer.authorName}&background=random`}
                       alt={prayer.authorName}
-                      className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                      className="h-8 w-8 rounded-full border-2 border-white object-cover shadow-sm"
                     />
                     <div className="text-left">
                       <p className="text-xs font-bold text-slate-900">{prayer.authorName}</p>
@@ -312,7 +326,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                         {prayer.authorId === auth.currentUser?.uid ? (
                           <button
                             onClick={() => setShowAnswerModal(prayer)}
-                            className="flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                            className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-600 transition-all hover:bg-emerald-100 sm:px-4"
                           >
                             <CheckCircle2 size={14} />
                             Fui Atendido!
@@ -320,7 +334,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                         ) : (
                           <button
                             onClick={() => handleIntercede(prayer.id)}
-                            className="flex items-center gap-2 bg-primary-50 text-primary hover:bg-primary-100 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                            className="flex items-center gap-2 rounded-xl bg-primary-50 px-3 py-2 text-xs font-bold text-primary transition-all hover:bg-primary-100 sm:px-4"
                           >
                             <Heart size={14} className="group-hover:fill-primary" />
                             {prayer.intercessorsCount > 0 ? `${prayer.intercessorsCount} Orando` : 'Vou Orar'}
@@ -329,7 +343,7 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                       </>
                     )}
                     {prayer.status === 'answered' && (
-                      <div className="flex items-center gap-2 text-emerald-600 text-xs font-bold">
+                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-600">
                         <CheckCircle2 size={16} />
                         Glória a Deus!
                       </div>

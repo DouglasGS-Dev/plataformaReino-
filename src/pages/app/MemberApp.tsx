@@ -383,14 +383,18 @@ export default function App() {
     }
   };
 
-  const handleOnboardingComplete = (guest: boolean) => {
+  const handleOnboardingComplete = (action: 'register' | 'login' | 'guest') => {
     setShowOnboarding(false);
-    setIsGuest(guest);
+    const isGuest = action === 'guest';
+    setIsGuest(isGuest);
     localStorage.setItem('hasVisited', 'true');
     sessionStorage.setItem('hasVisited', 'true');
-    localStorage.setItem('isGuest', String(guest));
-    sessionStorage.setItem('isGuest', String(guest));
-    if (!guest) {
+    localStorage.setItem('isGuest', String(isGuest));
+    sessionStorage.setItem('isGuest', String(isGuest));
+    
+    if (action === 'register') {
+      navigate('/register');
+    } else if (action === 'login') {
       setIsLoginModalOpen(true);
     }
   };

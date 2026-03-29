@@ -165,9 +165,14 @@ export default function AppLayout() {
   if (showOnboarding) {
     return (
       <Onboarding 
-        onComplete={() => {
+        onComplete={(action) => {
           localStorage.setItem('hasVisitedApp', 'true');
           setShowOnboarding(false);
+          if (action === 'register') {
+            navigate('/register');
+          } else if (action === 'login') {
+            setIsLoginModalOpen(true);
+          }
         }} 
       />
     );

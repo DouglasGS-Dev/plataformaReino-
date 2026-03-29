@@ -844,6 +844,36 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
     }
   };
 
+  const handlePray = async (postId: string) => {
+    const path = `posts/${postId}`;
+    try {
+      await updateDoc(doc(db, 'posts', postId), {
+        prayerCount: increment(1)
+      });
+      showToast('Obrigado por interceder!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+      showToast('Erro ao registrar oração.', 'error');
+    }
+  };
+
+  const handleMarkAsAnswered = async (postId: string) => {
+    const testimony = prompt('Que bom! Qual foi o testemunho da resposta?');
+    if (testimony === null) return;
+
+    const path = `posts/${postId}`;
+    try {
+      await updateDoc(doc(db, 'posts', postId), {
+        isAnswered: true,
+        testimony: testimony
+      });
+      showToast('Testemunho registrado com sucesso!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+      showToast('Erro ao marcar como respondido.', 'error');
+    }
+  };
+
   const handleShare = async (post: Post) => {
     const shareData = {
       title: 'Diário Espiritual',
@@ -1300,6 +1330,29 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                       </motion.div>
                       <span>{post.likesCount || 0} Amém</span>
                     </motion.button>
+                    
+                    {post.type === 'prayer' && (
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handlePray(post.id)}
+                        className={`flex items-center gap-2 font-medium text-sm transition-colors ${
+                          post.prayerCount ? 'text-blue-500' : 'text-[var(--color-text-tertiary)] hover:text-blue-500'
+                        }`}
+                      >
+                        <Sparkles size={18} className={post.prayerCount ? "fill-blue-500" : ""} />
+                        <span>{post.prayerCount || 0} Orando</span>
+                      </motion.button>
+                    )}
+
+                    {post.type === 'prayer' && post.authorId === auth.currentUser?.uid && !post.isAnswered && (
+                      <button
+                        onClick={() => handleMarkAsAnswered(post.id)}
+                        className="flex items-center gap-2 font-medium text-sm text-[var(--color-text-tertiary)] hover:text-emerald-500 transition-colors"
+                      >
+                        <CheckCircle2 size={18} />
+                        <span>Marcar como respondido</span>
+                      </button>
+                    )}
                     
                     <button 
                       onClick={() => setCommentingOn(commentingOn === post.id ? null : post.id)}

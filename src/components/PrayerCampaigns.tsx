@@ -203,13 +203,13 @@ export default function PrayerCampaigns({ churchId, userProfile }: PrayerCampaig
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Target className="text-primary w-6 h-6" />
+          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900 sm:text-2xl">
+            <Target className="h-6 w-6 text-primary" />
             Campanhas e Propósitos
           </h2>
-          <p className="text-slate-500 text-sm">Junte-se aos propósitos de oração da igreja.</p>
+          <p className="text-sm text-slate-500">Junte-se aos propósitos de oração da igreja.</p>
         </div>
         
         {isIntercessorAdmin && (
@@ -219,7 +219,7 @@ export default function PrayerCampaigns({ churchId, userProfile }: PrayerCampaig
               setFormData({ title: '', description: '', startDate: '', endDate: '', status: 'active' });
               setShowCreateModal(true);
             }}
-            className="w-full md:w-auto flex items-center justify-center gap-2 bg-primary hover:opacity-90 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-primary/20"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:opacity-90 sm:w-auto"
           >
             <Plus size={20} />
             Nova Campanha
@@ -229,19 +229,19 @@ export default function PrayerCampaigns({ churchId, userProfile }: PrayerCampaig
 
       {/* Campaigns List */}
       {loading ? (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           {[1, 2].map(i => (
-            <div key={i} className="p-6 glass-card animate-pulse h-48" />
+            <div key={i} className="glass-card h-48 animate-pulse p-6" />
           ))}
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="text-center py-12 glass-card">
-          <Target className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-slate-900 mb-2">Nenhuma campanha ativa</h3>
+        <div className="glass-card py-12 text-center">
+          <Target className="mx-auto mb-4 h-16 w-16 text-slate-300" />
+          <h3 className="mb-2 text-xl font-bold text-slate-900">Nenhuma campanha ativa</h3>
           <p className="text-slate-500">No momento não há campanhas de oração em andamento.</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
           <AnimatePresence>
             {campaigns.map((campaign) => (
               <motion.div
@@ -249,10 +249,10 @@ export default function PrayerCampaigns({ churchId, userProfile }: PrayerCampaig
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="glass-card p-6 flex flex-col relative overflow-hidden"
+                className="glass-card relative flex flex-col overflow-hidden p-4 sm:p-6"
               >
                 {/* Status Badge */}
-                <div className={`absolute top-0 right-0 px-4 py-1 rounded-bl-xl text-xs font-bold text-white ${
+                <div className={`absolute right-0 top-0 rounded-bl-xl px-4 py-1 text-xs font-bold text-white ${
                   campaign.status === 'active' ? 'bg-emerald-500' : 
                   campaign.status === 'completed' ? 'bg-slate-500' : 'bg-amber-500'
                 }`}>
@@ -260,50 +260,50 @@ export default function PrayerCampaigns({ churchId, userProfile }: PrayerCampaig
                    campaign.status === 'completed' ? 'Concluída' : 'Rascunho'}
                 </div>
 
-                <div className="flex justify-between items-start mb-4 mt-2">
-                  <h3 className="text-xl font-bold text-slate-900 pr-24">{campaign.title}</h3>
+                <div className="mb-4 mt-2 flex items-start justify-between">
+                  <h3 className="pr-24 text-lg font-bold text-slate-900 sm:text-xl">{campaign.title}</h3>
                 </div>
                 
-                <p className="text-slate-600 mb-6 flex-1">{campaign.description}</p>
+                <p className="mb-6 flex-1 text-sm text-slate-600 sm:text-base">{campaign.description}</p>
                 
-                <div className="flex flex-col gap-3 mb-6">
+                <div className="mb-6 flex flex-col gap-3">
                   <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Calendar className="w-4 h-4" />
+                    <Calendar className="h-4 w-4" />
                     <span>{new Date(campaign.startDate).toLocaleDateString()} - {new Date(campaign.endDate).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Users className="w-4 h-4" />
+                    <Users className="h-4 w-4" />
                     <span>{campaign.participantsCount} intercessores participando</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between border-t border-slate-100 pt-4">
                   {campaign.status === 'active' ? (
                     <button
                       onClick={() => handleParticipate(campaign.id)}
-                      className="flex-1 bg-primary-50 text-primary hover:bg-primary hover:text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary-50 px-4 py-2 font-medium text-primary transition-colors hover:bg-primary hover:text-white"
                     >
                       <CheckCircle2 size={18} />
                       Participar
                     </button>
                   ) : (
-                    <div className="flex-1 text-center text-slate-400 font-medium py-2">
+                    <div className="flex-1 py-2 text-center font-medium text-slate-400">
                       Campanha Encerrada
                     </div>
                   )}
 
                   {isIntercessorAdmin && (
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="ml-4 flex items-center gap-2">
                       <button
                         onClick={() => openEditModal(campaign)}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
                         title="Editar"
                       >
                         <Edit2 size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(campaign.id)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
                         title="Excluir"
                       >
                         <Trash2 size={18} />

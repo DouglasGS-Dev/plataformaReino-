@@ -152,6 +152,9 @@ export interface Post {
   type: 'prayer' | 'testimony' | 'announcement';
   likesCount: number;
   commentsCount?: number;
+  prayerCount?: number;
+  isAnswered?: boolean;
+  testimony?: string;
   createdAt: any;
   bibleVerse?: string;
   media?: PostMedia[];

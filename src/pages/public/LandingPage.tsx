@@ -71,7 +71,7 @@ export default function LandingPage() {
     }
   };
 
-  const slideVariants = {
+  const slideVariants: any = {
     enter: (direction: number) => ({
       x: direction > 0 ? 1000 : -1000,
       opacity: 0,
