@@ -57,8 +57,8 @@ export default function App() {
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {/* Public Routes (SaaS Landing Page, Login, Register) */}
+          <Route path="/" element={<LandingPage />} />
           <Route element={<PublicLayout />}>
-            <Route path="/" element={<LandingPage />} />
             <Route path="/church-login" element={<ChurchLogin />} />
             <Route path="/register" element={<RegisterChurch />} />
           </Route>

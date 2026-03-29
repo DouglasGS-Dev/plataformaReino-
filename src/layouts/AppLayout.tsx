@@ -14,6 +14,7 @@ import LoginModal from '../components/LoginModal';
 import EnvironmentSwitcher from '../components/EnvironmentSwitcher';
 import { Logo } from '../components/Logo';
 import { NotificationService } from '../services/notificationService';
+import Onboarding from '../components/Onboarding';
 
 export default function AppLayout() {
   const [user, setUser] = useState<User | null>(null);
@@ -22,6 +23,12 @@ export default function AppLayout() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !localStorage.getItem('hasVisitedApp');
+    }
+    return true;
+  });
   
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
@@ -152,6 +159,17 @@ export default function AppLayout() {
           <p className="text-slate-500 font-medium animate-pulse">Carregando...</p>
         </div>
       </div>
+    );
+  }
+
+  if (showOnboarding) {
+    return (
+      <Onboarding 
+        onComplete={() => {
+          localStorage.setItem('hasVisitedApp', 'true');
+          setShowOnboarding(false);
+        }} 
+      />
     );
   }
 
