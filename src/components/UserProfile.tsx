@@ -18,8 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import { UserProfile as UserProfileType } from '../types';
 
 interface UserProfileProps {
@@ -80,26 +79,67 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'A imagem deve ter no máximo 5MB.' });
-      return;
-    }
-
     setIsUploading(true);
     setMessage(null);
 
     try {
-      const storageRef = ref(storage, `users/${profile.uid}/profile_pic_${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
+      // Create a FileReader to read the image
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
       
-      setFormData(prev => ({ ...prev, photoURL: downloadURL }));
-      setMessage({ type: 'success', text: 'Foto carregada com sucesso!' });
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        
+        img.onload = () => {
+          // Resize image using canvas
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 300;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Get compressed base64 string
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          setFormData(prev => ({ ...prev, photoURL: dataUrl }));
+          setMessage({ type: 'success', text: 'Foto carregada com sucesso!' });
+          setIsUploading(false);
+          
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        };
+        
+        img.onerror = () => {
+          setIsUploading(false);
+          setMessage({ type: 'error', text: 'Erro ao processar a imagem.' });
+        };
+      };
+      
+      reader.onerror = () => {
+        setIsUploading(false);
+        setMessage({ type: 'error', text: 'Erro ao ler o arquivo.' });
+      };
     } catch (error) {
-      console.error('Error uploading photo:', error);
+      console.error('Error processing photo:', error);
       setMessage({ type: 'error', text: 'Erro ao carregar foto. Tente novamente.' });
-    } finally {
       setIsUploading(false);
     }
   };

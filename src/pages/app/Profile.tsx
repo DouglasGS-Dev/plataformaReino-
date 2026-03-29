@@ -8,8 +8,7 @@ import {
 } from 'lucide-react';
 import { updateProfile, User } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, auth, storage, handleFirestoreError, OperationType } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { UserProfile } from '../../types';
 
 export default function ProfilePage() {
@@ -47,26 +46,67 @@ export default function ProfilePage() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('A imagem deve ter no máximo 5MB.', 'error');
-      return;
-    }
-
     setIsUploading(true);
+    
     try {
-      const storageRef = ref(storage, `profiles/${user.uid}/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      setPhotoURL(downloadURL);
-      showToast('Imagem carregada com sucesso! Clique em Salvar Alterações.');
+      // Create a FileReader to read the image
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        
+        img.onload = () => {
+          // Resize image using canvas
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 300;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Get compressed base64 string
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          setPhotoURL(dataUrl);
+          setIsUploading(false);
+          showToast('Imagem carregada com sucesso! Clique em Salvar Alterações.');
+          
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        };
+        
+        img.onerror = () => {
+          setIsUploading(false);
+          showToast('Erro ao processar a imagem.', 'error');
+        };
+      };
+      
+      reader.onerror = () => {
+        setIsUploading(false);
+        showToast('Erro ao ler o arquivo.', 'error');
+      };
     } catch (error) {
-      console.error('Error uploading image:', error);
-      showToast('Erro ao fazer upload da imagem.', 'error');
-    } finally {
+      console.error('Error processing image:', error);
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      showToast('Erro ao processar a imagem.', 'error');
     }
   };
 
