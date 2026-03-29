@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'motion/react';
 import PrayerWall from '../../components/PrayerWall';
+import PrayerCampaigns from '../../components/PrayerCampaigns';
 import { UserProfile } from '../../types';
+import { MessageCircle, Target } from 'lucide-react';
 
 export default function Prayers() {
   const { userProfile } = useOutletContext<{ userProfile: UserProfile | null }>();
+  const [activeTab, setActiveTab] = useState<'wall' | 'campaigns'>('wall');
 
   if (!userProfile?.churchId) {
     return (
@@ -28,9 +31,42 @@ export default function Prayers() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="max-w-4xl mx-auto"
+      className="max-w-4xl mx-auto space-y-6"
     >
-      <PrayerWall churchId={userProfile.churchId} userProfile={userProfile} />
+      {/* Tabs */}
+      <div className="flex p-1 bg-slate-100/80 backdrop-blur-sm rounded-2xl w-fit mx-auto">
+        <button
+          onClick={() => setActiveTab('wall')}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium transition-all ${
+            activeTab === 'wall'
+              ? 'bg-white text-primary shadow-sm'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+          }`}
+        >
+          <MessageCircle size={18} />
+          Mural
+        </button>
+        <button
+          onClick={() => setActiveTab('campaigns')}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium transition-all ${
+            activeTab === 'campaigns'
+              ? 'bg-white text-primary shadow-sm'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+          }`}
+        >
+          <Target size={18} />
+          Campanhas
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="mt-6">
+        {activeTab === 'wall' ? (
+          <PrayerWall churchId={userProfile.churchId} userProfile={userProfile} />
+        ) : (
+          <PrayerCampaigns churchId={userProfile.churchId} userProfile={userProfile} />
+        )}
+      </div>
     </motion.div>
   );
 }

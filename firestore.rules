@@ -46,6 +46,15 @@ service cloud.firestore {
               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == churchId));
     }
 
+    function isIntercessorAdmin(churchId) {
+      return isAuthenticated() && 
+             (isChurchAdmin(churchId) || 
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == churchId &&
+               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['pastor', 'leader'] ||
+                ('tags' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && 'intercessor' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tags))));
+    }
+
     function isCellMember(cellId) {
       return isAuthenticated() && 
              (isAdmin() || 
@@ -130,6 +139,18 @@ service cloud.firestore {
       
       match /intercessions/{intercessionId} {
         allow read, write: if isAuthenticated() && (request.resource.data.intercessorId == request.auth.uid || isOwner(request.auth.uid));
+      }
+    }
+
+    match /prayer_campaigns/{campaignId} {
+      allow read: if isChurchMember(resource.data.churchId);
+      allow create: if isIntercessorAdmin(request.resource.data.churchId);
+      allow update: if isIntercessorAdmin(resource.data.churchId) ||
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantsCount']));
+      allow delete: if isIntercessorAdmin(resource.data.churchId);
+
+      match /participants/{participantId} {
+        allow read, write: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isOwner(request.auth.uid));
       }
     }
 

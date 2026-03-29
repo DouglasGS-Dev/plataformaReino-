@@ -96,6 +96,38 @@
       },
       "required": ["id", "prayerRequestId", "intercessorId", "intercessorName", "createdAt"]
     },
+    "PrayerCampaign": {
+      "title": "PrayerCampaign",
+      "description": "A prayer campaign or purpose for the church",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The campaign's unique ID" },
+        "churchId": { "type": "string", "description": "The ID of the church" },
+        "title": { "type": "string", "description": "The title of the campaign" },
+        "description": { "type": "string", "description": "The description of the campaign" },
+        "startDate": { "type": "string", "description": "The start date of the campaign" },
+        "endDate": { "type": "string", "description": "The end date of the campaign" },
+        "status": { "type": "string", "enum": ["active", "completed", "draft"], "description": "The status of the campaign" },
+        "createdBy": { "type": "string", "description": "The ID of the user who created the campaign" },
+        "createdByName": { "type": "string", "description": "The name of the user who created the campaign" },
+        "createdAt": { "type": "timestamp", "description": "When the campaign was created" },
+        "participantsCount": { "type": "number", "description": "The number of participants" }
+      },
+      "required": ["id", "churchId", "title", "description", "startDate", "endDate", "status", "createdBy", "createdByName", "createdAt", "participantsCount"]
+    },
+    "PrayerCampaignParticipant": {
+      "title": "PrayerCampaignParticipant",
+      "description": "A record of someone participating in a prayer campaign",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The participation's unique ID" },
+        "campaignId": { "type": "string", "description": "The ID of the prayer campaign" },
+        "userId": { "type": "string", "description": "The ID of the user participating" },
+        "userName": { "type": "string", "description": "The name of the user participating" },
+        "createdAt": { "type": "timestamp", "description": "When the participation started" }
+      },
+      "required": ["id", "campaignId", "userId", "userName", "createdAt"]
+    },
     "SpiritualEntry": {
       "title": "SpiritualEntry",
       "description": "A diary entry or spiritual record",
@@ -372,6 +404,14 @@
     "/prayer_requests/{requestId}/intercessions/{intercessionId}": {
       "schema": { "$ref": "#/entities/Intercession" },
       "description": "Stores intercessions for a prayer request"
+    },
+    "/prayer_campaigns/{campaignId}": {
+      "schema": { "$ref": "#/entities/PrayerCampaign" },
+      "description": "Stores prayer campaigns for a church"
+    },
+    "/prayer_campaigns/{campaignId}/participants/{participantId}": {
+      "schema": { "$ref": "#/entities/PrayerCampaignParticipant" },
+      "description": "Stores participants for a prayer campaign"
     },
     "/users/{userId}/entries/{entryId}": {
       "schema": { "$ref": "#/entities/SpiritualEntry" },

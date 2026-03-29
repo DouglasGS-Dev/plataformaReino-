@@ -293,6 +293,28 @@ export interface VisitorFollowUp {
   createdAt: any;
 }
 
+export interface PrayerCampaign {
+  id: string;
+  churchId: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'completed' | 'draft';
+  createdBy: string;
+  createdByName: string;
+  createdAt: any;
+  participantsCount: number;
+}
+
+export interface PrayerCampaignParticipant {
+  id: string;
+  campaignId: string;
+  userId: string;
+  userName: string;
+  createdAt: any;
+}
+
 export interface Intercession {
   id: string;
   prayerRequestId: string;
