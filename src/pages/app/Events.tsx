@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Clock, Search, ChevronRight, Users, Share2, Ticket, Filter, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 
 interface Event {
@@ -40,7 +40,11 @@ export default function Events() {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching events:", error);
-      setLoading(false);
+      try {
+        handleFirestoreError(error, OperationType.LIST, 'events');
+      } catch (e) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();

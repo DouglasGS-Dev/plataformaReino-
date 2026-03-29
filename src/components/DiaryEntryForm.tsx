@@ -6,7 +6,7 @@ import { compressImage } from '../utils/media';
 import { BaseModal } from './BaseModal';
 
 interface DiaryEntryFormProps {
-  onSave: (entry: Omit<SpiritualEntry, 'id' | 'date'>, id?: number) => void;
+  onSave: (entry: Omit<SpiritualEntry, 'id' | 'date'>, id?: string) => void;
   onClose: () => void;
   initialCategory?: Category;
   initialEntry?: SpiritualEntry;

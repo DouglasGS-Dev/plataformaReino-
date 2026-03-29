@@ -12,7 +12,7 @@ import {
   increment,
   setDoc
 } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { PrayerRequest, Intercession, UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -80,7 +80,11 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching prayers:", error);
-      setLoading(false);
+      try {
+        handleFirestoreError(error, OperationType.LIST, 'prayer_requests');
+      } catch (e) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
@@ -104,7 +108,12 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
         createdAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'prayer_requests'), prayerData);
+      const path = 'prayer_requests';
+      try {
+        await addDoc(collection(db, 'prayer_requests'), prayerData);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, path);
+      }
       setNewPrayer({ content: '', category: 'Espiritual', isPrivate: false });
       setShowCreateModal(false);
       setToast({ message: 'Pedido de oração enviado!', type: 'success' });
@@ -119,20 +128,27 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
       const intercessionId = `${auth.currentUser?.uid}_${prayerId}`;
       const intercessionRef = doc(db, 'prayer_requests', prayerId, 'intercessions', intercessionId);
       
-      // Check if already interceding (optional, but good for UX)
-      // For simplicity, we'll just try to set it. Rules should handle duplicates if needed.
-      
-      await setDoc(intercessionRef, {
-        id: intercessionId,
-        prayerRequestId: prayerId,
-        intercessorId: auth.currentUser?.uid,
-        intercessorName: userProfile.displayName || 'Intercessor',
-        createdAt: serverTimestamp()
-      });
+      const intercessionPath = `prayer_requests/${prayerId}/intercessions/${intercessionId}`;
+      try {
+        await setDoc(intercessionRef, {
+          id: intercessionId,
+          prayerRequestId: prayerId,
+          intercessorId: auth.currentUser?.uid,
+          intercessorName: userProfile.displayName || 'Intercessor',
+          createdAt: serverTimestamp()
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, intercessionPath);
+      }
 
-      await updateDoc(doc(db, 'prayer_requests', prayerId), {
-        intercessorsCount: increment(1)
-      });
+      const prayerPath = `prayer_requests/${prayerId}`;
+      try {
+        await updateDoc(doc(db, 'prayer_requests', prayerId), {
+          intercessorsCount: increment(1)
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, prayerPath);
+      }
 
       setToast({ message: 'Você se comprometeu a orar por isso!', type: 'success' });
     } catch (error) {
@@ -146,11 +162,16 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
     if (!showAnswerModal) return;
 
     try {
-      await updateDoc(doc(db, 'prayer_requests', showAnswerModal.id), {
-        status: 'answered',
-        testimony: testimony,
-        answeredAt: serverTimestamp()
-      });
+      const path = `prayer_requests/${showAnswerModal.id}`;
+      try {
+        await updateDoc(doc(db, 'prayer_requests', showAnswerModal.id), {
+          status: 'answered',
+          testimony: testimony,
+          answeredAt: serverTimestamp()
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, path);
+      }
 
       setShowAnswerModal(null);
       setTestimony('');

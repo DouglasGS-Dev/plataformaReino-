@@ -11,8 +11,9 @@ import {
   updateDoc,
   deleteDoc
 } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
+import { toast } from 'sonner';
 import { 
   ShoppingBag, 
   Plus, 
@@ -70,14 +71,17 @@ export default function AppMarketplace() {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const itemsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as MarketplaceItem[];
-      setItems(itemsData);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const itemsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as MarketplaceItem[];
+        setItems(itemsData);
+        setLoading(false);
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'marketplace_items')
+    );
 
     return () => unsubscribe();
   }, [userProfile?.churchId]);
@@ -111,7 +115,7 @@ export default function AppMarketplace() {
         imageUrl: ''
       });
     } catch (error) {
-      console.error('Error creating item:', error);
+      handleFirestoreError(error, OperationType.CREATE, 'marketplace_items');
     }
   };
 
@@ -121,16 +125,17 @@ export default function AppMarketplace() {
         status: 'sold'
       });
     } catch (error) {
-      console.error('Error marking as sold:', error);
+      handleFirestoreError(error, OperationType.UPDATE, 'marketplace_items');
     }
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!window.confirm('Tem certeza que deseja remover este item?')) return;
+    if (!confirm('Tem certeza que deseja remover este item?')) return;
     try {
       await deleteDoc(doc(db, 'marketplace_items', itemId));
+      toast.success('Item removido com sucesso!');
     } catch (error) {
-      console.error('Error deleting item:', error);
+      handleFirestoreError(error, OperationType.DELETE, 'marketplace_items');
     }
   };
 

@@ -27,11 +27,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthReady(true);
       
       if (currentUser) {
-        // Initial fetch
+        setLoading(true);
+        // Initial fetch to speed up first render
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
             setUserProfile(userDoc.data() as UserProfile);
+            setLoading(false);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -41,12 +43,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unsubscribeProfile = onSnapshot(doc(db, 'users', currentUser.uid), (doc) => {
           if (doc.exists()) {
             setUserProfile(doc.data() as UserProfile);
+            setLoading(false);
+          } else {
+            // If user exists in Auth but not in Firestore yet (registration lag)
+            // We keep loading true for a bit longer
+            setUserProfile(null);
+            // We don't set loading to false here immediately to allow for registration setDoc to complete
           }
-          setLoading(false);
         }, (error) => {
           console.error('Error listening to user profile:', error);
           setLoading(false);
         });
+
+        // Safety timeout for loading state if profile never arrives
+        const timeout = setTimeout(() => {
+          setLoading(false);
+        }, 5000);
+
+        return () => {
+          if (timeout) clearTimeout(timeout);
+        };
       } else {
         setUserProfile(null);
         setLoading(false);

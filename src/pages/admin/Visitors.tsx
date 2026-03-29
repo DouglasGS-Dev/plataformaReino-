@@ -11,9 +11,11 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
-  setDoc
+  setDoc,
+  writeBatch,
+  getDocs
 } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { 
   UserPlus, 
@@ -90,6 +92,9 @@ export default function AdminVisitors() {
       })) as Visitor[];
       setVisitors(visitorsData);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'visitors');
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -113,6 +118,8 @@ export default function AdminVisitors() {
         ...doc.data()
       })) as VisitorFollowUp[];
       setFollowUps(followUpsData);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `visitor_follow_ups for visitor ${selectedVisitor.id}`);
     });
 
     return () => unsubscribe();
@@ -147,7 +154,7 @@ export default function AdminVisitors() {
       });
       toast.success('Visitante registrado com sucesso!');
     } catch (error) {
-      console.error('Error creating visitor:', error);
+      handleFirestoreError(error, OperationType.CREATE, 'visitors');
       toast.error('Erro ao registrar visitante.');
     }
   };
@@ -161,7 +168,7 @@ export default function AdminVisitors() {
       });
       toast.success('Progresso atualizado!');
     } catch (error) {
-      console.error('Error updating step:', error);
+      handleFirestoreError(error, OperationType.UPDATE, `visitors/${visitorId}`);
       toast.error('Erro ao atualizar progresso.');
     }
   };
@@ -197,7 +204,7 @@ export default function AdminVisitors() {
       });
       toast.success('Acompanhamento registrado!');
     } catch (error) {
-      console.error('Error adding follow-up:', error);
+      handleFirestoreError(error, OperationType.CREATE, 'visitor_follow_ups');
       toast.error('Erro ao registrar acompanhamento.');
     }
   };
@@ -230,18 +237,27 @@ export default function AdminVisitors() {
 
       toast.success(`${visitor.name} agora é um membro!`);
     } catch (error) {
-      console.error('Error converting to member:', error);
+      handleFirestoreError(error, OperationType.WRITE, 'users/visitors');
       toast.error('Erro ao converter visitante em membro.');
     }
   };
 
   const handleDeleteVisitor = async (visitorId: string) => {
-    if (!window.confirm('Excluir este registro de visitante?')) return;
+    if (!window.confirm('Excluir este registro de visitante? Todos os acompanhamentos vinculados também serão excluídos.')) return;
     try {
-      await deleteDoc(doc(db, 'visitors', visitorId));
+      const batch = writeBatch(db);
+      
+      // 1. Delete the visitor
+      batch.delete(doc(db, 'visitors', visitorId));
+      
+      // 2. Delete all follow-ups for this visitor
+      const followUpsSnapshot = await getDocs(query(collection(db, 'visitor_follow_ups'), where('visitorId', '==', visitorId)));
+      followUpsSnapshot.forEach(d => batch.delete(d.ref));
+      
+      await batch.commit();
       toast.success('Registro excluído.');
     } catch (error) {
-      console.error('Error deleting visitor:', error);
+      handleFirestoreError(error, OperationType.DELETE, `visitors/${visitorId}`);
       toast.error('Erro ao excluir registro.');
     }
   };

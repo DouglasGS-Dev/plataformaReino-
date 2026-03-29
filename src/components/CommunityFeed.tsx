@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageCircle, Heart, Share2, Send, User, Sparkles, Shield, Megaphone, PenTool, Trash2, Image as ImageIcon, Video, X, ChevronLeft, ChevronRight, Maximize2, BookOpen, Play, Pause, Volume2, VolumeX, Clock, Crop, Scissors, Check, CheckCircle2, Layout } from 'lucide-react';
 import { db, auth, storage, handleFirestoreError, OperationType } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp, limit, startAfter, getDocs, QueryDocumentSnapshot, DocumentData, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Post, PostMedia, Comment } from '../types';
 import { compressImage, formatFileSize } from '../utils/media';
@@ -33,8 +33,12 @@ const PostComments = ({ postId, userRole, onDeleteComment }: { postId: string, u
       setComments(fetchedComments);
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `posts/${postId}/comments`);
-      setLoading(false);
+      console.error("Error fetching comments:", error);
+      try {
+        handleFirestoreError(error, OperationType.LIST, `posts/${postId}/comments`);
+      } catch (e) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
@@ -282,6 +286,9 @@ const CustomAudioPlayer = ({
 
 export default function CommunityFeed({ churchId, userRole }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [newPost, setNewPost] = useState('');
   const [postType, setPostType] = useState<'prayer' | 'testimony' | 'announcement'>('prayer');
   const [bibleVerse, setBibleVerse] = useState('');
@@ -536,7 +543,8 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
     const q = query(
       collection(db, 'posts'),
       where('churchId', '==', churchId),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(10)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -544,15 +552,55 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
       snapshot.forEach((doc) => {
         fetchedPosts.push(doc.data() as Post);
       });
+      
       setPosts(fetchedPosts);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1] || null);
+      setHasMore(snapshot.docs.length === 10);
       setLoadingPosts(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'posts');
-      setLoadingPosts(false);
+      console.error("Error fetching posts:", error);
+      try {
+        handleFirestoreError(error, OperationType.LIST, 'posts');
+      } catch (e) {
+        setLoadingPosts(false);
+      }
     });
 
     return () => unsubscribe();
   }, [churchId]);
+
+  const loadMorePosts = async () => {
+    if (!churchId || !lastVisible || loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const q = query(
+        collection(db, 'posts'),
+        where('churchId', '==', churchId),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(10)
+      );
+
+      const snapshot = await getDocs(q);
+      const newPosts: Post[] = [];
+      snapshot.forEach((doc) => {
+        newPosts.push(doc.data() as Post);
+      });
+
+      if (newPosts.length > 0) {
+        setPosts(prev => [...prev, ...newPosts]);
+        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+        setHasMore(snapshot.docs.length === 10);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, 'posts');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handlePost = async () => {
     if (!newPost.trim() || !auth.currentUser) return;
@@ -564,18 +612,24 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
 
     try {
       if (editingPost) {
-        await setDoc(doc(db, 'posts', editingPost.id), {
-          content: newPost,
-          type: postType,
-          bibleVerse: bibleVerse || null,
-          media: selectedMedia.length > 0 ? selectedMedia : null,
-          aspectRatio: selectedMedia.length > 0 ? aspectRatio : null,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        const path = `posts/${editingPost.id}`;
+        try {
+          await setDoc(doc(db, 'posts', editingPost.id), {
+            content: newPost,
+            type: postType,
+            bibleVerse: bibleVerse || null,
+            media: selectedMedia.length > 0 ? selectedMedia : null,
+            aspectRatio: selectedMedia.length > 0 ? aspectRatio : null,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
         setEditingPost(null);
         showSuccess('Publicação atualizada com sucesso!');
       } else {
         const postId = `post_${Date.now()}`;
+        const path = `posts/${postId}`;
         const post = {
           id: postId,
           churchId,
@@ -592,7 +646,11 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
           aspectRatio: selectedMedia.length > 0 ? aspectRatio : null
         };
 
-        await setDoc(doc(db, 'posts', postId), post);
+        try {
+          await setDoc(doc(db, 'posts', postId), post);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
         showToast('Publicação compartilhada com sucesso!');
       }
       setNewPost('');
@@ -601,7 +659,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
       setAspectRatio('16:9');
       setPostType('prayer');
     } catch (error) {
-      handleFirestoreError(error, editingPost ? OperationType.UPDATE : OperationType.CREATE, editingPost ? `posts/${editingPost.id}` : 'posts');
+      console.error("Error saving post:", error);
     } finally {
       setLoading(false);
     }
@@ -624,11 +682,25 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
           }
         }
       }
-      await deleteDoc(doc(db, 'posts', postToDelete));
+      const path = `posts/${postToDelete}`;
+      try {
+        const batch = writeBatch(db);
+        
+        // 1. Delete the post itself
+        batch.delete(doc(db, 'posts', postToDelete));
+        
+        // 2. Delete all comments for this post
+        const commentsSnapshot = await getDocs(collection(db, 'posts', postToDelete, 'comments'));
+        commentsSnapshot.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, path);
+      }
       setPostToDelete(null);
       showToast('Publicação excluída com sucesso!');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `posts/${postToDelete}`);
+      console.error("Error deleting post:", error);
       showToast('Erro ao excluir publicação.', 'error');
     }
   };
@@ -701,13 +773,24 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
     };
 
     try {
-      await setDoc(doc(db, 'posts', postId, 'comments', commentId), comment);
-      await updateDoc(doc(db, 'posts', postId), {
-        commentsCount: increment(1)
-      });
+      const path = `posts/${postId}/comments/${commentId}`;
+      try {
+        await setDoc(doc(db, 'posts', postId, 'comments', commentId), comment);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, path);
+      }
+
+      const postPath = `posts/${postId}`;
+      try {
+        await updateDoc(doc(db, 'posts', postId), {
+          commentsCount: increment(1)
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, postPath);
+      }
       setNewComment('');
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `posts/${postId}/comments`);
+      console.error("Error adding comment:", error);
     } finally {
       setIsSubmittingComment(false);
     }
@@ -715,13 +798,24 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
 
   const handleDeleteComment = async (postId: string, commentId: string) => {
     try {
-      await deleteDoc(doc(db, 'posts', postId, 'comments', commentId));
-      await updateDoc(doc(db, 'posts', postId), {
-        commentsCount: increment(-1)
-      });
+      const path = `posts/${postId}/comments/${commentId}`;
+      try {
+        await deleteDoc(doc(db, 'posts', postId, 'comments', commentId));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, path);
+      }
+
+      const postPath = `posts/${postId}`;
+      try {
+        await updateDoc(doc(db, 'posts', postId), {
+          commentsCount: increment(-1)
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, postPath);
+      }
       showToast('Comentário excluído.');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `posts/${postId}/comments/${commentId}`);
+      console.error("Error deleting comment:", error);
       showToast('Erro ao excluir comentário.', 'error');
     }
   };
@@ -732,16 +826,21 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
     setLikedPosts(prev => new Set(prev).add(postId));
 
     try {
-      await updateDoc(doc(db, 'posts', postId), {
-        likesCount: increment(1)
-      });
+      const path = `posts/${postId}`;
+      try {
+        await updateDoc(doc(db, 'posts', postId), {
+          likesCount: increment(1)
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, path);
+        throw error;
+      }
     } catch (error) {
       setLikedPosts(prev => {
         const newSet = new Set(prev);
         newSet.delete(postId);
         return newSet;
       });
-      handleFirestoreError(error, OperationType.UPDATE, `posts/${postId}`);
     }
   };
 
@@ -1298,6 +1397,28 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
             })
           )}
         </AnimatePresence>
+        
+        {hasMore && (
+          <div className="flex justify-center pt-8">
+            <button
+              onClick={loadMorePosts}
+              disabled={loadingMore}
+              className="flex items-center gap-2 px-8 py-3 bg-white border border-[var(--color-border)] text-[var(--color-text-secondary)] font-bold rounded-2xl hover:bg-slate-50 hover:border-primary/30 hover:text-primary transition-all shadow-sm disabled:opacity-50 group"
+            >
+              {loadingMore ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span>Carregando...</span>
+                </>
+              ) : (
+                <>
+                  <Clock size={18} className="group-hover:rotate-12 transition-transform" />
+                  <span>Ver publicações anteriores</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
         
         {!loadingPosts && posts.length === 0 && (
           <motion.div 

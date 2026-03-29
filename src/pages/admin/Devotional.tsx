@@ -92,7 +92,7 @@ export default function DevotionalPage() {
       return;
     }
 
-    const entryId = Date.now();
+    const entryId = Date.now().toString();
     const newEntry: SpiritualEntry = {
       id: entryId,
       userId: user.uid,

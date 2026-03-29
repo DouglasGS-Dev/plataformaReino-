@@ -12,7 +12,7 @@ export type Category =
 export type Impact = 'Baixo' | 'Médio' | 'Alto';
 
 export interface SpiritualEntry {
-  id: number;
+  id: string;
   userId?: string;
   date: string;
   title: string;
@@ -25,6 +25,7 @@ export interface SpiritualEntry {
   media?: PostMedia[];
   aspectRatio?: '1:1' | '4:5' | '16:9' | '9:16';
   reminderAt?: string;
+  notified?: boolean;
   shareWithCommunity?: boolean;
   createdAt?: any;
   updatedAt?: any;

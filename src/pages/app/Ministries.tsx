@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Calendar, Clock, ChevronRight, Star, ShieldCheck, Search, MessageSquare, Briefcase } from 'lucide-react';
 import { motion } from 'motion/react';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { Ministry } from '../../types';
 
@@ -34,9 +34,12 @@ export default function Ministries() {
       orderBy('name')
     );
 
-    const unsubscribeMinistries = onSnapshot(mQuery, (snapshot) => {
-      setMinistries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ministry)));
-    });
+    const unsubscribeMinistries = onSnapshot(mQuery, 
+      (snapshot) => {
+        setMinistries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ministry)));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'ministries')
+    );
 
     // Fetch user schedules (mocking for now as we don't have a schedules collection yet, 
     // but we can prepare the UI)

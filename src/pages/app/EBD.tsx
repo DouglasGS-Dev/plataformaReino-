@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, GraduationCap, Clock, ChevronRight, CheckCircle2, PlayCircle, Lock, Search, Filter, ArrowLeft, CheckCircle, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, setDoc, orderBy } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 
 interface EBDTrack {
@@ -88,20 +88,32 @@ export default function EBD() {
     const coursesQuery = query(collection(db, 'ebd_courses'), where('churchId', '==', churchId), orderBy('order', 'asc'));
     const classesQuery = query(collection(db, 'ebd_classes'), where('churchId', '==', churchId), orderBy('order', 'asc'));
 
-    const unsubscribeTracks = onSnapshot(tracksQuery, (snapshot) => setTracks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDTrack))));
-    const unsubscribeCourses = onSnapshot(coursesQuery, (snapshot) => setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDCourse))));
-    const unsubscribeClasses = onSnapshot(classesQuery, (snapshot) => {
-      const fetchedClasses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDClass));
-      setClasses(fetchedClasses);
-      setMyClassesAsTeacher(fetchedClasses.filter(c => c.teacherId === auth.currentUser?.uid));
-    });
+    const unsubscribeTracks = onSnapshot(tracksQuery, 
+      (snapshot) => setTracks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDTrack))),
+      (error) => handleFirestoreError(error, OperationType.GET, 'ebd_tracks')
+    );
+    const unsubscribeCourses = onSnapshot(coursesQuery, 
+      (snapshot) => setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDCourse))),
+      (error) => handleFirestoreError(error, OperationType.GET, 'ebd_courses')
+    );
+    const unsubscribeClasses = onSnapshot(classesQuery, 
+      (snapshot) => {
+        const fetchedClasses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDClass));
+        setClasses(fetchedClasses);
+        setMyClassesAsTeacher(fetchedClasses.filter(c => c.teacherId === auth.currentUser?.uid));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'ebd_classes')
+    );
 
     // Fetch user enrollments
     const enrollmentsQuery = query(collection(db, 'ebd_enrollments'), where('userId', '==', auth.currentUser.uid));
-    const unsubscribeEnrollments = onSnapshot(enrollmentsQuery, (snapshot) => {
-      setMyEnrollments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Enrollment)));
-      setLoading(false);
-    });
+    const unsubscribeEnrollments = onSnapshot(enrollmentsQuery, 
+      (snapshot) => {
+        setMyEnrollments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Enrollment)));
+        setLoading(false);
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'ebd_enrollments')
+    );
 
     return () => {
       unsubscribeTracks();
@@ -119,13 +131,16 @@ export default function EBD() {
         where('date', '==', attendanceDate)
       );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          setAttendanceRecord({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
-        } else {
-          setAttendanceRecord(null);
-        }
-      });
+      const unsubscribe = onSnapshot(q, 
+        (snapshot) => {
+          if (!snapshot.empty) {
+            setAttendanceRecord({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
+          } else {
+            setAttendanceRecord(null);
+          }
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, 'ebd_attendance')
+      );
 
       // Fetch enrollments for this class to show students
       const enrollmentsQuery = query(
@@ -133,14 +148,21 @@ export default function EBD() {
         where('classId', '==', selectedClass.id)
       );
 
-      const unsubscribeEnrollments = onSnapshot(enrollmentsQuery, async (snapshot) => {
-        const enrollmentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const withUsers = await Promise.all(enrollmentsData.map(async (e: any) => {
-          const userDoc = await getDoc(doc(db, 'users', e.userId));
-          return { ...e, user: userDoc.exists() ? userDoc.data() : { displayName: 'Usuário Desconhecido' } };
-        }));
-        setClassEnrollments(withUsers);
-      });
+      const unsubscribeEnrollments = onSnapshot(enrollmentsQuery, 
+        async (snapshot) => {
+          try {
+            const enrollmentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const withUsers = await Promise.all(enrollmentsData.map(async (e: any) => {
+              const userDoc = await getDoc(doc(db, 'users', e.userId));
+              return { ...e, user: userDoc.exists() ? userDoc.data() : { displayName: 'Usuário Desconhecido' } };
+            }));
+            setClassEnrollments(withUsers);
+          } catch (error) {
+            handleFirestoreError(error, OperationType.GET, 'ebd_enrollments_with_users');
+          }
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, 'ebd_enrollments')
+      );
 
       return () => {
         unsubscribe();
@@ -174,21 +196,25 @@ export default function EBD() {
         });
       }
     } catch (error) {
-      console.error("Error saving attendance:", error);
+      handleFirestoreError(error, attendanceRecord ? OperationType.UPDATE : OperationType.CREATE, 'ebd_attendance');
     } finally {
       setSavingAttendance(false);
     }
   };
 
   const fetchLessons = async (classId: string) => {
-    const q = query(
-      collection(db, `ebd_classes/${classId}/lessons`),
-      orderBy('order', 'asc')
-    );
-    const snapshot = await getDocs(q);
-    const lessonsData = snapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as EBDLesson));
-    setLessons(lessonsData);
+    try {
+      const q = query(
+        collection(db, `ebd_classes/${classId}/lessons`),
+        orderBy('order', 'asc')
+      );
+      const snapshot = await getDocs(q);
+      const lessonsData = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as EBDLesson));
+      setLessons(lessonsData);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, `ebd_classes/${classId}/lessons`);
+    }
   };
 
   const handleEnroll = async (type: 'track' | 'course' | 'class', id: string) => {
@@ -210,7 +236,7 @@ export default function EBD() {
       
       await addDoc(collection(db, 'ebd_enrollments'), enrollmentData);
     } catch (error) {
-      console.error("Error enrolling:", error);
+      handleFirestoreError(error, OperationType.CREATE, 'ebd_enrollments');
     } finally {
       setEnrolling(null);
     }
@@ -237,7 +263,7 @@ export default function EBD() {
       }
       setActiveLesson(null);
     } catch (error) {
-      console.error("Error completing lesson:", error);
+      handleFirestoreError(error, OperationType.UPDATE, 'ebd_enrollments');
     } finally {
       setCompleting(false);
     }

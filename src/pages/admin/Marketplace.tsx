@@ -9,7 +9,7 @@ import {
   updateDoc,
   deleteDoc
 } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { 
   ShoppingBag, 
@@ -57,6 +57,9 @@ export default function AdminMarketplace() {
       })) as MarketplaceItem[];
       setItems(itemsData);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'marketplace_items');
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -68,7 +71,7 @@ export default function AdminMarketplace() {
         status: 'sold'
       });
     } catch (error) {
-      console.error('Error marking as sold:', error);
+      handleFirestoreError(error, OperationType.UPDATE, `marketplace_items/${itemId}`);
     }
   };
 
@@ -77,7 +80,7 @@ export default function AdminMarketplace() {
     try {
       await deleteDoc(doc(db, 'marketplace_items', itemId));
     } catch (error) {
-      console.error('Error deleting item:', error);
+      handleFirestoreError(error, OperationType.DELETE, `marketplace_items/${itemId}`);
     }
   };
 

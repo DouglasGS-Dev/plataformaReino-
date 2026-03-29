@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, User, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Message {
@@ -53,7 +53,11 @@ export default function CellChat({ cellId, cellName, onClose }: CellChatProps) {
       }, 100);
     }, (error) => {
       console.error("Error fetching messages:", error);
-      setLoading(false);
+      try {
+        handleFirestoreError(error, OperationType.LIST, `cells/${cellId}/messages`);
+      } catch (e) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
@@ -65,15 +69,20 @@ export default function CellChat({ cellId, cellName, onClose }: CellChatProps) {
 
     setSending(true);
     try {
-      await addDoc(collection(db, 'cells', cellId, 'messages'), {
-        cellId,
-        authorId: auth.currentUser.uid,
-        authorName: auth.currentUser.displayName || 'Membro',
-        authorPhoto: auth.currentUser.photoURL || '',
-        content: newMessage.trim(),
-        type: 'text',
-        createdAt: serverTimestamp()
-      });
+      const path = `cells/${cellId}/messages`;
+      try {
+        await addDoc(collection(db, 'cells', cellId, 'messages'), {
+          cellId,
+          authorId: auth.currentUser.uid,
+          authorName: auth.currentUser.displayName || 'Membro',
+          authorPhoto: auth.currentUser.photoURL || '',
+          content: newMessage.trim(),
+          type: 'text',
+          createdAt: serverTimestamp()
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, path);
+      }
       setNewMessage('');
     } catch (error) {
       console.error("Error sending message:", error);

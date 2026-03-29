@@ -101,7 +101,7 @@
       "description": "A diary entry or spiritual record",
       "type": "object",
       "properties": {
-        "id": { "type": "number", "description": "The entry's unique ID (timestamp)" },
+        "id": { "type": "string", "description": "The entry's unique ID" },
         "userId": { "type": "string", "description": "The ID of the user who created the entry" },
         "date": { "type": "string", "description": "The date of the entry in ISO format" },
         "title": { "type": "string", "description": "The title of the entry" },
@@ -111,6 +111,8 @@
         "bibleVerse": { "type": "string", "description": "A related Bible verse" },
         "impact": { "type": "string", "enum": ["Baixo", "Médio", "Alto"], "description": "The impact level" },
         "isMemorial": { "type": "boolean", "description": "Whether the entry is a memorial" },
+        "reminderTime": { "type": "string", "description": "Optional reminder time in HH:mm format" },
+        "notified": { "type": "boolean", "description": "Whether the user has been notified for this entry" },
         "createdAt": { "type": "timestamp", "description": "When the entry was created" }
       },
       "required": ["id", "userId", "date", "title", "category", "description", "lessonsLearned", "impact", "isMemorial", "createdAt"]

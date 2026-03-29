@@ -17,7 +17,7 @@ import { BaseModal } from '../../components/BaseModal';
 import { SpiritualEntry, Category, UserProfile } from '../../types';
 import { auth, db, handleFirestoreError, OperationType } from '../../firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, getDoc, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { MediaCarousel } from '../../components/MediaCarousel';
 
 const MOCK_STATS = {
@@ -395,13 +395,13 @@ export default function App() {
     }
   };
 
-  const handleSaveEntry = async (newEntryData: Omit<SpiritualEntry, 'id' | 'date'>, existingId?: number) => {
+  const handleSaveEntry = async (newEntryData: Omit<SpiritualEntry, 'id' | 'date'>, existingId?: string) => {
     if (!user) {
       setIsLoginModalOpen(true);
       return;
     }
     
-    const entryId = existingId !== undefined ? existingId : Date.now();
+    const entryId = existingId || Date.now().toString();
     
     // Find the entry being edited to preserve its date and createdAt
     const entryToUpdate = existingId !== undefined ? entries.find(e => e.id === existingId) : undefined;
@@ -459,7 +459,13 @@ export default function App() {
         } else if (existingId) {
           // If it was an update and now it's NOT shared, delete the post if it existed
           try {
-            await deleteDoc(doc(db, 'posts', postId));
+            const batch = writeBatch(db);
+            batch.delete(doc(db, 'posts', postId));
+            
+            const commentsSnapshot = await getDocs(collection(db, 'posts', postId, 'comments'));
+            commentsSnapshot.forEach(d => batch.delete(d.ref));
+            
+            await batch.commit();
           } catch (e) {
             // Ignore if post didn't exist or other errors
           }
@@ -477,10 +483,23 @@ export default function App() {
     }
   };
 
-  const handleDeleteEntry = async (entryId: number) => {
+  const handleDeleteEntry = async (entryId: string) => {
     if (!user) return;
     try {
-      await deleteDoc(doc(db, `users/${user.uid}/entries/${entryId}`));
+      const batch = writeBatch(db);
+      
+      // 1. Delete the diary entry
+      batch.delete(doc(db, `users/${user.uid}/entries/${entryId}`));
+      
+      // 2. Delete the associated post if it exists
+      const postId = `post_diary_${entryId}`;
+      batch.delete(doc(db, 'posts', postId));
+      
+      // 3. Delete all comments for the associated post
+      const commentsSnapshot = await getDocs(collection(db, 'posts', postId, 'comments'));
+      commentsSnapshot.forEach(d => batch.delete(d.ref));
+      
+      await batch.commit();
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `users/${user.uid}/entries/${entryId}`);
     }
@@ -500,7 +519,11 @@ export default function App() {
     if (view === 'timeline' && filterCategory === 'Memoriais') {
       result = result.filter(e => e.isMemorial);
     }
-    return result.sort((a, b) => b.id - a.id);
+    return result.sort((a, b) => {
+      const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+      const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+      return (bId || 0) - (aId || 0);
+    });
   }, [entries, view, filterCategory]);
 
   if (!isAuthReady) {

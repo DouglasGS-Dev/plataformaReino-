@@ -8,7 +8,7 @@ import {
   doc,
   getDoc
 } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { 
   Calendar, 
@@ -54,20 +54,23 @@ export default function AppSchedules() {
       orderBy('date', 'asc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allSchedules = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Schedule[];
-      
-      const filtered = allSchedules.filter(s => 
-        s.roles.some(r => r.userId === auth.currentUser?.uid) &&
-        new Date(s.date) >= new Date() // Only future schedules
-      );
-      
-      setMySchedules(filtered);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const allSchedules = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Schedule[];
+        
+        const filtered = allSchedules.filter(s => 
+          s.roles.some(r => r.userId === auth.currentUser?.uid) &&
+          new Date(s.date) >= new Date() // Only future schedules
+        );
+        
+        setMySchedules(filtered);
+        setLoading(false);
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'schedules')
+    );
 
     return () => unsubscribe();
   }, [userProfile?.churchId]);

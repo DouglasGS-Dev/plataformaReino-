@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Filter, MoreVertical, TrendingUp, TrendingDown, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, Download, FileText, PieChart as PieChartIcon, BarChart2 } from 'lucide-react';
 import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { AddFinanceModal } from '../../components/AdminModals';
 import { FinanceCharts } from '../../components/FinanceCharts';
@@ -43,7 +43,7 @@ export default function Finance() {
       setTransactions(transactionsList);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching finances:", error);
+      handleFirestoreError(error, OperationType.GET, 'finances');
       setLoading(false);
     });
 

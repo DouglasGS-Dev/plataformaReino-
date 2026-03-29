@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, MapPin, Calendar, Clock, Search, ChevronRight, User as UserIcon, MessageCircle, Navigation, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import CellChat from '../../components/CellChat';
 
@@ -37,7 +37,11 @@ export default function Cells() {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching cells:", error);
-      setLoading(false);
+      try {
+        handleFirestoreError(error, OperationType.LIST, 'cells');
+      } catch (e) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, Users, Plus, Search, Calendar, ChevronRight, GraduationCap, Edit2, Trash2, ArrowLeft, Play, FileText, Loader2, Save, X, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useOutletContext } from 'react-router-dom';
-import { collection, query, where, onSnapshot, orderBy, deleteDoc, doc, addDoc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { collection, query, where, onSnapshot, orderBy, deleteDoc, doc, addDoc, serverTimestamp, updateDoc, getDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { AddEBDClassModal, AddEBDLessonModal, AddEBDCourseModal, AddEBDTrackModal } from '../../components/AdminModals';
+import { toast } from 'sonner';
 
 interface EBDTrack {
   id: string;
@@ -88,10 +89,13 @@ export default function EBD() {
       orderBy('order', 'asc')
     );
 
-    const unsubscribeTracks = onSnapshot(tracksQuery, (snapshot) => {
-      setTracks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDTrack)));
-      setLoading(false);
-    });
+    const unsubscribeTracks = onSnapshot(tracksQuery, 
+      (snapshot) => {
+        setTracks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDTrack)));
+        setLoading(false);
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'ebd_tracks')
+    );
 
     const coursesQuery = query(
       collection(db, 'ebd_courses'),
@@ -99,9 +103,12 @@ export default function EBD() {
       orderBy('order', 'asc')
     );
 
-    const unsubscribeCourses = onSnapshot(coursesQuery, (snapshot) => {
-      setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDCourse)));
-    });
+    const unsubscribeCourses = onSnapshot(coursesQuery, 
+      (snapshot) => {
+        setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDCourse)));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'ebd_courses')
+    );
 
     const classesQuery = query(
       collection(db, 'ebd_classes'),
@@ -109,9 +116,12 @@ export default function EBD() {
       orderBy('order', 'asc')
     );
 
-    const unsubscribeClasses = onSnapshot(classesQuery, (snapshot) => {
-      setClasses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDClass)));
-    });
+    const unsubscribeClasses = onSnapshot(classesQuery, 
+      (snapshot) => {
+        setClasses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDClass)));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'ebd_classes')
+    );
 
     return () => {
       unsubscribeTracks();
@@ -128,13 +138,16 @@ export default function EBD() {
         where('date', '==', attendanceDate)
       );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          setAttendanceRecord({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as AttendanceRecord);
-        } else {
-          setAttendanceRecord(null);
-        }
-      });
+      const unsubscribe = onSnapshot(q, 
+        (snapshot) => {
+          if (!snapshot.empty) {
+            setAttendanceRecord({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as AttendanceRecord);
+          } else {
+            setAttendanceRecord(null);
+          }
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, 'ebd_attendance')
+      );
 
       return () => unsubscribe();
     }
@@ -147,9 +160,12 @@ export default function EBD() {
         orderBy('order', 'asc')
       );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        setLessons(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDLesson)));
-      });
+      const unsubscribe = onSnapshot(q, 
+        (snapshot) => {
+          setLessons(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EBDLesson)));
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, `ebd_classes/${activeClass.id}/lessons`)
+      );
 
       return () => unsubscribe();
     }
@@ -162,17 +178,24 @@ export default function EBD() {
         where('classId', '==', activeClass.id)
       );
 
-      const unsubscribe = onSnapshot(q, async (snapshot) => {
-        const enrollmentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Fetch user details for each enrollment
-        const withUsers = await Promise.all(enrollmentsData.map(async (e: any) => {
-          const userDoc = await getDoc(doc(db, 'users', e.userId));
-          return { ...e, user: userDoc.exists() ? userDoc.data() : { name: 'Usuário Desconhecido' } };
-        }));
+      const unsubscribe = onSnapshot(q, 
+        async (snapshot) => {
+          try {
+            const enrollmentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Fetch user details for each enrollment
+            const withUsers = await Promise.all(enrollmentsData.map(async (e: any) => {
+              const userDoc = await getDoc(doc(db, 'users', e.userId));
+              return { ...e, user: userDoc.exists() ? userDoc.data() : { name: 'Usuário Desconhecido' } };
+            }));
 
-        setEnrollments(withUsers);
-      });
+            setEnrollments(withUsers);
+          } catch (error) {
+            handleFirestoreError(error, OperationType.GET, 'ebd_enrollments_with_users');
+          }
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, 'ebd_enrollments')
+      );
 
       return () => unsubscribe();
     }
@@ -203,18 +226,49 @@ export default function EBD() {
         });
       }
     } catch (error) {
-      console.error("Error saving attendance:", error);
+      handleFirestoreError(error, attendanceRecord ? OperationType.UPDATE : OperationType.CREATE, 'ebd_attendance');
     } finally {
       setSavingAttendance(false);
     }
   };
 
   const handleDeleteCourse = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este curso?')) {
+    if (window.confirm('Tem certeza que deseja excluir este curso? Todas as classes, lições e matrículas vinculadas serão excluídas.')) {
       try {
-        await deleteDoc(doc(db, 'ebd_courses', id));
+        const batch = writeBatch(db);
+        
+        // 1. Delete the course itself
+        batch.delete(doc(db, 'ebd_courses', id));
+        
+        // 2. Find all classes in this course
+        const classesSnapshot = await getDocs(query(collection(db, 'ebd_classes'), where('courseId', '==', id)));
+        
+        for (const classDoc of classesSnapshot.docs) {
+          const classId = classDoc.id;
+          batch.delete(classDoc.ref);
+          
+          // Delete lessons
+          const lessonsSnapshot = await getDocs(collection(db, `ebd_classes/${classId}/lessons`));
+          lessonsSnapshot.forEach(d => batch.delete(d.ref));
+          
+          // Delete enrollments for this class
+          const enrollmentsSnapshot = await getDocs(query(collection(db, 'ebd_enrollments'), where('classId', '==', classId)));
+          enrollmentsSnapshot.forEach(d => batch.delete(d.ref));
+          
+          // Delete attendance for this class
+          const attendanceSnapshot = await getDocs(query(collection(db, 'ebd_attendance'), where('classId', '==', classId)));
+          attendanceSnapshot.forEach(d => batch.delete(d.ref));
+        }
+        
+        // 3. Delete enrollments for this course
+        const courseEnrollmentsSnapshot = await getDocs(query(collection(db, 'ebd_enrollments'), where('courseId', '==', id)));
+        courseEnrollmentsSnapshot.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
+        toast.success("Curso excluído com sucesso!");
       } catch (error) {
-        console.error("Error deleting course:", error);
+        handleFirestoreError(error, OperationType.DELETE, 'ebd_courses');
+        toast.error("Erro ao excluir curso.");
       }
     }
   };
@@ -240,11 +294,30 @@ export default function EBD() {
   };
 
   const handleDeleteClass = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta classe?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta classe? Todas as lições, matrículas e presenças vinculadas serão excluídas.')) {
       try {
-        await deleteDoc(doc(db, 'ebd_classes', id));
+        const batch = writeBatch(db);
+        
+        // 1. Delete the class itself
+        batch.delete(doc(db, 'ebd_classes', id));
+        
+        // 2. Delete all lessons
+        const lessonsSnapshot = await getDocs(collection(db, `ebd_classes/${id}/lessons`));
+        lessonsSnapshot.forEach(d => batch.delete(d.ref));
+        
+        // 3. Delete enrollments
+        const enrollmentsSnapshot = await getDocs(query(collection(db, 'ebd_enrollments'), where('classId', '==', id)));
+        enrollmentsSnapshot.forEach(d => batch.delete(d.ref));
+        
+        // 4. Delete attendance
+        const attendanceSnapshot = await getDocs(query(collection(db, 'ebd_attendance'), where('classId', '==', id)));
+        attendanceSnapshot.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
+        toast.success("Classe excluída com sucesso!");
       } catch (error) {
-        console.error("Error deleting class:", error);
+        handleFirestoreError(error, OperationType.DELETE, 'ebd_classes');
+        toast.error("Erro ao excluir classe.");
       }
     }
   };
@@ -269,8 +342,10 @@ export default function EBD() {
     if (window.confirm('Tem certeza que deseja excluir esta lição?')) {
       try {
         await deleteDoc(doc(db, `ebd_classes/${activeClass.id}/lessons`, lessonId));
+        toast.success("Lição excluída com sucesso!");
       } catch (error) {
-        console.error("Error deleting lesson:", error);
+        handleFirestoreError(error, OperationType.DELETE, `ebd_classes/${activeClass.id}/lessons`);
+        toast.error("Erro ao excluir lição.");
       }
     }
   };
@@ -281,11 +356,54 @@ export default function EBD() {
   };
 
   const handleDeleteTrack = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta trilha?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta trilha? Todos os cursos, classes, lições e matrículas vinculados serão excluídos.')) {
       try {
-        await deleteDoc(doc(db, 'ebd_tracks', id));
+        const batch = writeBatch(db);
+        
+        // 1. Delete the track itself
+        batch.delete(doc(db, 'ebd_tracks', id));
+        
+        // 2. Find all courses in this track
+        const coursesSnapshot = await getDocs(query(collection(db, 'ebd_courses'), where('trackId', '==', id)));
+        
+        for (const courseDoc of coursesSnapshot.docs) {
+          const courseId = courseDoc.id;
+          batch.delete(courseDoc.ref);
+          
+          // Find all classes in this course
+          const classesSnapshot = await getDocs(query(collection(db, 'ebd_classes'), where('courseId', '==', courseId)));
+          
+          for (const classDoc of classesSnapshot.docs) {
+            const classId = classDoc.id;
+            batch.delete(classDoc.ref);
+            
+            // Delete lessons
+            const lessonsSnapshot = await getDocs(collection(db, `ebd_classes/${classId}/lessons`));
+            lessonsSnapshot.forEach(d => batch.delete(d.ref));
+            
+            // Delete enrollments for this class
+            const enrollmentsSnapshot = await getDocs(query(collection(db, 'ebd_enrollments'), where('classId', '==', classId)));
+            enrollmentsSnapshot.forEach(d => batch.delete(d.ref));
+            
+            // Delete attendance for this class
+            const attendanceSnapshot = await getDocs(query(collection(db, 'ebd_attendance'), where('classId', '==', classId)));
+            attendanceSnapshot.forEach(d => batch.delete(d.ref));
+          }
+          
+          // Delete enrollments for this course
+          const courseEnrollmentsSnapshot = await getDocs(query(collection(db, 'ebd_enrollments'), where('courseId', '==', courseId)));
+          courseEnrollmentsSnapshot.forEach(d => batch.delete(d.ref));
+        }
+        
+        // 3. Delete enrollments for this track
+        const trackEnrollmentsSnapshot = await getDocs(query(collection(db, 'ebd_enrollments'), where('trackId', '==', id)));
+        trackEnrollmentsSnapshot.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
+        toast.success("Trilha excluída com sucesso!");
       } catch (error) {
-        console.error("Error deleting track:", error);
+        handleFirestoreError(error, OperationType.DELETE, 'ebd_tracks');
+        toast.error("Erro ao excluir trilha.");
       }
     }
   };

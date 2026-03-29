@@ -62,8 +62,13 @@ export default function MentorPage() {
       // Fetch recent entries for context
       const entriesRef = collection(db, `users/${user.uid}/entries`);
       const q = query(entriesRef, orderBy('id', 'desc'), limit(5));
-      const entriesSnap = await getDocs(q);
-      const recentEntries = entriesSnap.docs.map(d => d.data() as SpiritualEntry);
+      let recentEntries: SpiritualEntry[] = [];
+      try {
+        const entriesSnap = await getDocs(q);
+        recentEntries = entriesSnap.docs.map(d => d.data() as SpiritualEntry);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/entries`);
+      }
 
       const context = recentEntries.length > 0 
         ? `Recentemente, o usuário registrou: ${recentEntries.map(e => `[${e.category}] ${e.title}: ${e.description}`).join('; ')}`
@@ -113,7 +118,7 @@ export default function MentorPage() {
     }
 
     setIsSaving(index);
-    const entryId = Date.now();
+    const entryId = Date.now().toString();
     const newEntry: SpiritualEntry = {
       id: entryId,
       userId: user.uid,

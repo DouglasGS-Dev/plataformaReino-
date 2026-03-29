@@ -9,7 +9,7 @@ import {
   DollarSign,
   Info
 } from 'lucide-react';
-import { db, auth } from '../../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
 import { 
   collection, 
   query, 
@@ -53,6 +53,13 @@ export default function Giving() {
       })) as Transaction[];
       setTransactions(data);
       setLoading(false);
+    }, (error) => {
+      console.error("Error fetching giving history:", error);
+      try {
+        handleFirestoreError(error, OperationType.LIST, 'finances');
+      } catch (e) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();

@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, Sparkles, Shield, Mountain, Target, HandHeart, 
   CheckCircle2, Lightbulb, Heart, MessageCircle, Search, 
-  Filter, X, CheckCircle2 as CheckIcon, PenTool, Bell
+  Filter, X, CheckCircle2 as CheckIcon, PenTool, Bell, Clock
 } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, limit, startAfter, getDocs, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { SpiritualEntry, Category, UserProfile } from '../../types';
 import { User } from 'firebase/auth';
@@ -34,6 +34,9 @@ export default function Diary() {
   }>();
 
   const [entries, setEntries] = useState<SpiritualEntry[]>([]);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [initialCategory, setInitialCategory] = useState<Category | undefined>();
@@ -66,7 +69,7 @@ export default function Diary() {
     }
 
     const entriesRef = collection(db, `users/${user.uid}/entries`);
-    const q = query(entriesRef, orderBy('id', 'desc'));
+    const q = query(entriesRef, orderBy('id', 'desc'), limit(10));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedEntries: SpiritualEntry[] = [];
@@ -74,22 +77,61 @@ export default function Diary() {
         fetchedEntries.push(doc.data() as SpiritualEntry);
       });
       setEntries(fetchedEntries);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1] || null);
+      setHasMore(snapshot.docs.length === 10);
       setLoading(false);
     }, (error) => {
-      setLoading(false);
-      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/entries`);
+      console.error("Error fetching diary entries:", error);
+      try {
+        handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/entries`);
+      } catch (e) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
   }, [user]);
 
-  const handleSaveEntry = async (newEntryData: Omit<SpiritualEntry, 'id' | 'date'>, existingId?: number) => {
+  const loadMoreEntries = async () => {
+    if (!user || !lastVisible || loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const entriesRef = collection(db, `users/${user.uid}/entries`);
+      const q = query(
+        entriesRef, 
+        orderBy('id', 'desc'), 
+        startAfter(lastVisible), 
+        limit(10)
+      );
+
+      const snapshot = await getDocs(q);
+      const newEntries: SpiritualEntry[] = [];
+      snapshot.forEach((doc) => {
+        newEntries.push(doc.data() as SpiritualEntry);
+      });
+
+      if (newEntries.length > 0) {
+        setEntries(prev => [...prev, ...newEntries]);
+        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+        setHasMore(snapshot.docs.length === 10);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/entries`);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleSaveEntry = async (newEntryData: Omit<SpiritualEntry, 'id' | 'date'>, existingId?: string) => {
     if (!user) {
       handleLogin();
       return;
     }
     
-    const entryId = existingId !== undefined ? existingId : Date.now();
+    const entryId = existingId !== undefined ? existingId : Date.now().toString();
     const entryToUpdate = existingId !== undefined ? entries.find(e => e.id === existingId) : undefined;
 
     const newEntry: SpiritualEntry = {
@@ -101,27 +143,34 @@ export default function Diary() {
       updatedAt: serverTimestamp(),
       media: newEntryData.media || null,
       aspectRatio: newEntryData.aspectRatio || null,
-      bibleVerse: newEntryData.bibleVerse || null
+      bibleVerse: newEntryData.bibleVerse || null,
+      notified: entryToUpdate?.notified || false
     };
 
     try {
       const entryRef = doc(db, `users/${user.uid}/entries/${entryId}`);
-      if (existingId !== undefined) {
-        await setDoc(entryRef, newEntry, { merge: true });
-        showToast('Registro atualizado!');
-      } else {
-        await setDoc(entryRef, newEntry);
-        showToast('Novo registro salvo!');
+      const path = `users/${user.uid}/entries/${entryId}`;
+      try {
+        if (existingId !== undefined) {
+          await setDoc(entryRef, newEntry, { merge: true });
+          showToast('Registro atualizado!');
+        } else {
+          await setDoc(entryRef, newEntry);
+          showToast('Novo registro salvo!');
+        }
+      } catch (error) {
+        handleFirestoreError(error, existingId !== undefined ? OperationType.UPDATE : OperationType.CREATE, path);
       }
       
       // Sync to community timeline if shared
       if (userProfile?.churchId && newEntry.shareWithCommunity) {
         const postId = `post_diary_${entryId}`;
+        const postPath = `posts/${postId}`;
         const postData = {
           churchId: userProfile.churchId,
           authorId: user.uid,
           authorName: user.displayName || 'Membro',
-          authorPhoto: user.photoURL || '',
+          authorPhoto: user.displayName ? (user.photoURL || '') : '',
           content: `Compartilhou um novo registro no diário: "${newEntry.title}"\n\n${newEntry.description.length > 200 ? newEntry.description.substring(0, 200) + '...' : newEntry.description}`,
           type: newEntry.category === 'Pedidos de oração' ? 'prayer' : 'testimony',
           bibleVerse: newEntry.bibleVerse || null,
@@ -133,18 +182,60 @@ export default function Diary() {
 
         try {
           const { createdAt, likesCount, ...updateData } = postData;
-          await updateDoc(doc(db, 'posts', postId), updateData);
-        } catch (e) {
-          await setDoc(doc(db, 'posts', postId), postData);
+          try {
+            await updateDoc(doc(db, 'posts', postId), updateData);
+          } catch (e) {
+            await setDoc(doc(db, 'posts', postId), postData);
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.WRITE, postPath);
         }
       }
 
       setIsFormOpen(false);
       setEditingEntry(undefined);
     } catch (error) {
-      handleFirestoreError(error, existingId !== undefined ? OperationType.UPDATE : OperationType.CREATE, `users/${user.uid}/entries/${entryId}`);
+      console.error("Error saving diary entry:", error);
     }
   };
+
+  useEffect(() => {
+    if (!user || entries.length === 0) return;
+
+    const checkReminders = async () => {
+      const now = new Date();
+      const pendingReminders = entries.filter(entry => 
+        entry.reminderAt && 
+        !entry.notified && 
+        new Date(entry.reminderAt) <= now
+      );
+
+      for (const entry of pendingReminders) {
+        await NotificationService.sendNotification(
+          `Lembrete Espiritual: ${entry.title}`,
+          `Você agendou um momento para refletir sobre este registro de ${entry.category}.`
+        );
+
+        // Mark as notified in Firestore
+        try {
+          const entryRef = doc(db, `users/${user.uid}/entries/${entry.id}`);
+          const path = `users/${user.uid}/entries/${entry.id}`;
+          try {
+            await updateDoc(entryRef, { notified: true });
+          } catch (error) {
+            handleFirestoreError(error, OperationType.UPDATE, path);
+          }
+        } catch (error) {
+          console.error("Error updating notification status:", error);
+        }
+      }
+    };
+
+    const interval = setInterval(checkReminders, 60000); // Check every minute
+    checkReminders(); // Initial check
+
+    return () => clearInterval(interval);
+  }, [user, entries]);
 
   const filteredEntries = useMemo(() => {
     return entries.filter(entry => 
@@ -279,7 +370,7 @@ export default function Diary() {
                   {entry.category}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">
-                  {new Date(entry.id).toLocaleDateString('pt-BR')}
+                  {new Date(entry.date).toLocaleDateString('pt-BR')}
                 </span>
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">
@@ -309,6 +400,28 @@ export default function Diary() {
           ))
         )}
       </div>
+
+      {hasMore && entries.length > 0 && (
+        <div className="flex justify-center pt-8">
+          <button
+            onClick={loadMoreEntries}
+            disabled={loadingMore}
+            className="flex items-center gap-2 px-8 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 hover:border-primary/30 hover:text-primary transition-all shadow-sm disabled:opacity-50 group"
+          >
+            {loadingMore ? (
+              <>
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>Carregando...</span>
+              </>
+            ) : (
+              <>
+                <Clock size={18} className="group-hover:rotate-12 transition-transform" />
+                <span>Ver registros anteriores</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       <Suspense fallback={null}>
         {isFormOpen && (

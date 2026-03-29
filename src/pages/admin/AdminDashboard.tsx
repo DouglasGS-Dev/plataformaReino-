@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Network, Wallet, Calendar } from 'lucide-react';
 import { motion } from 'motion/react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { Church } from '../../types';
 
@@ -20,15 +20,21 @@ export default function AdminDashboard() {
 
     // Members count
     const membersQuery = query(collection(db, 'users'), where('churchId', '==', church.id));
-    const unsubscribeMembers = onSnapshot(membersQuery, (snapshot) => {
-      setStats(prev => prev.map(s => s.name === 'Total de Membros' ? { ...s, value: snapshot.size.toString() } : s));
-    });
+    const unsubscribeMembers = onSnapshot(membersQuery, 
+      (snapshot) => {
+        setStats(prev => prev.map(s => s.name === 'Total de Membros' ? { ...s, value: snapshot.size.toString() } : s));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'users')
+    );
 
     // Cells count
     const cellsQuery = query(collection(db, 'cells'), where('churchId', '==', church.id));
-    const unsubscribeCells = onSnapshot(cellsQuery, (snapshot) => {
-      setStats(prev => prev.map(s => s.name === 'Células Ativas' ? { ...s, value: snapshot.size.toString() } : s));
-    });
+    const unsubscribeCells = onSnapshot(cellsQuery, 
+      (snapshot) => {
+        setStats(prev => prev.map(s => s.name === 'Células Ativas' ? { ...s, value: snapshot.size.toString() } : s));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'cells')
+    );
 
     // Events count (upcoming)
     const today = new Date().toISOString().split('T')[0];
@@ -37,9 +43,12 @@ export default function AdminDashboard() {
       where('churchId', '==', church.id),
       where('date', '>=', today)
     );
-    const unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
-      setStats(prev => prev.map(s => s.name === 'Eventos Próximos' ? { ...s, value: snapshot.size.toString() } : s));
-    });
+    const unsubscribeEvents = onSnapshot(eventsQuery, 
+      (snapshot) => {
+        setStats(prev => prev.map(s => s.name === 'Eventos Próximos' ? { ...s, value: snapshot.size.toString() } : s));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'events')
+    );
 
     // Finances (Income this month)
     const now = new Date();
@@ -50,13 +59,16 @@ export default function AdminDashboard() {
       where('date', '>=', firstDayOfMonth),
       where('type', '==', 'income')
     );
-    const unsubscribeFinances = onSnapshot(financesQuery, (snapshot) => {
-      const totalIncome = snapshot.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
-      setStats(prev => prev.map(s => s.name === 'Entradas (Mês)' ? { 
-        ...s, 
-        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalIncome) 
-      } : s));
-    });
+    const unsubscribeFinances = onSnapshot(financesQuery, 
+      (snapshot) => {
+        const totalIncome = snapshot.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
+        setStats(prev => prev.map(s => s.name === 'Entradas (Mês)' ? { 
+          ...s, 
+          value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalIncome) 
+        } : s));
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'finances')
+    );
 
     return () => {
       unsubscribeMembers();

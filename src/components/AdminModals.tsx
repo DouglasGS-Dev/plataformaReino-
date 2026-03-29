@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2, Users, CheckCircle2, Copy, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { BaseModal } from './BaseModal';
 import { collection, addDoc, updateDoc, doc, setDoc, serverTimestamp, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Ministry, Cell, Event, FinancialTransaction, UserProfile, MinistrySchedule } from '../types';
 import { toast } from 'sonner';
 
@@ -50,32 +50,52 @@ export const AddMinistryModal: React.FC<ModalProps<Ministry>> = ({ isOpen, onClo
     setLoading(true);
     try {
       if (item?.id) {
-        await updateDoc(doc(db, 'ministries', item.id), {
-          name,
-          leaderName,
-          description,
-          churchId,
-          updatedAt: serverTimestamp(),
-        });
+        const path = `ministries/${item.id}`;
+        try {
+          await updateDoc(doc(db, 'ministries', item.id), {
+            name,
+            leaderName,
+            description,
+            churchId,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
         toast.success("Ministério atualizado com sucesso!");
       } else {
-        await addDoc(collection(db, 'ministries'), {
-          name,
-          leaderName,
-          description,
-          churchId,
-          memberCount: 0,
-          createdAt: serverTimestamp(),
-        });
+        const path = 'ministries';
+        try {
+          await addDoc(collection(db, 'ministries'), {
+            name,
+            leaderName,
+            description,
+            churchId,
+            memberCount: 0,
+            createdAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
         toast.success("Ministério criado com sucesso!");
       }
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("Error saving ministry:", error);
-      const message = error.code === 'permission-denied' 
-        ? "Você não tem permissão para realizar esta ação." 
-        : "Erro ao salvar ministério. Tente novamente.";
+      let message = "Erro ao salvar ministério. Tente novamente.";
+      
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        if (error.code === 'permission-denied') {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      }
+      
       toast.error(message);
       onError?.(message);
     } finally {
@@ -190,38 +210,58 @@ export const CellModal: React.FC<ModalProps<Cell>> = ({ isOpen, onClose, churchI
     setLoading(true);
     try {
       if (item?.id) {
-        await updateDoc(doc(db, 'cells', item.id), {
-          name,
-          leaderName,
-          host,
-          meetingDay,
-          meetingTime,
-          address,
-          churchId,
-          updatedAt: serverTimestamp(),
-        });
+        const path = `cells/${item.id}`;
+        try {
+          await updateDoc(doc(db, 'cells', item.id), {
+            name,
+            leaderName,
+            host,
+            meetingDay,
+            meetingTime,
+            address,
+            churchId,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
         toast.success("Célula atualizada com sucesso!");
       } else {
-        await addDoc(collection(db, 'cells'), {
-          name,
-          leaderName,
-          host,
-          meetingDay,
-          meetingTime,
-          address,
-          churchId,
-          memberCount: 0,
-          createdAt: serverTimestamp(),
-        });
+        const path = 'cells';
+        try {
+          await addDoc(collection(db, 'cells'), {
+            name,
+            leaderName,
+            host,
+            meetingDay,
+            meetingTime,
+            address,
+            churchId,
+            memberCount: 0,
+            createdAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
         toast.success("Célula criada com sucesso!");
       }
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("Error saving cell:", error);
-      const message = error.code === 'permission-denied' 
-        ? "Você não tem permissão para realizar esta ação." 
-        : "Erro ao salvar célula. Tente novamente.";
+      let message = "Erro ao salvar célula. Tente novamente.";
+      
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        if (error.code === 'permission-denied') {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      }
+      
       toast.error(message);
       onError?.(message);
     } finally {
@@ -386,33 +426,53 @@ export const AddEventModal: React.FC<ModalProps<Event>> = ({ isOpen, onClose, ch
     setLoading(true);
     try {
       if (item?.id) {
-        await updateDoc(doc(db, 'events', item.id), {
-          title,
-          date,
-          location,
-          description,
-          churchId,
-          updatedAt: serverTimestamp(),
-        });
+        const path = `events/${item.id}`;
+        try {
+          await updateDoc(doc(db, 'events', item.id), {
+            title,
+            date,
+            location,
+            description,
+            churchId,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
         toast.success("Evento atualizado com sucesso!");
       } else {
-        await addDoc(collection(db, 'events'), {
-          title,
-          date,
-          location,
-          description,
-          churchId,
-          createdAt: serverTimestamp(),
-        });
+        const path = 'events';
+        try {
+          await addDoc(collection(db, 'events'), {
+            title,
+            date,
+            location,
+            description,
+            churchId,
+            createdAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
         toast.success("Evento criado com sucesso!");
       }
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("Error saving event:", error);
-      const message = error.code === 'permission-denied' 
-        ? "Você não tem permissão para realizar esta ação." 
-        : "Erro ao salvar evento. Tente novamente.";
+      let message = "Erro ao salvar evento. Tente novamente.";
+      
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        if (error.code === 'permission-denied') {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      }
+      
       toast.error(message);
       onError?.(message);
     } finally {
@@ -533,35 +593,55 @@ export const AddFinanceModal: React.FC<ModalProps<FinancialTransaction> & { init
     setLoading(true);
     try {
       if (item?.id) {
-        await updateDoc(doc(db, 'finances', item.id), {
-          description,
-          amount: parseFloat(amount),
-          type,
-          category,
-          date,
-          churchId,
-          updatedAt: serverTimestamp(),
-        });
+        const path = `finances/${item.id}`;
+        try {
+          await updateDoc(doc(db, 'finances', item.id), {
+            description,
+            amount: parseFloat(amount),
+            type,
+            category,
+            date,
+            churchId,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
         toast.success("Transação atualizada com sucesso!");
       } else {
-        await addDoc(collection(db, 'finances'), {
-          description,
-          amount: parseFloat(amount),
-          type,
-          category,
-          date,
-          churchId,
-          createdAt: serverTimestamp(),
-        });
+        const path = 'finances';
+        try {
+          await addDoc(collection(db, 'finances'), {
+            description,
+            amount: parseFloat(amount),
+            type,
+            category,
+            date,
+            churchId,
+            createdAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
         toast.success("Transação registrada com sucesso!");
       }
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("Error saving transaction:", error);
-      const message = error.code === 'permission-denied' 
-        ? "Você não tem permissão para realizar esta ação." 
-        : "Erro ao salvar transação. Tente novamente.";
+      let message = "Erro ao salvar transação. Tente novamente.";
+      
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        if (error.code === 'permission-denied') {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      }
+      
       toast.error(message);
       onError?.(message);
     } finally {
@@ -700,6 +780,7 @@ export const MemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onClose
     if (isOpen && !item && churchId) {
       // Fetch church invite code for invite mode
       const fetchChurch = async () => {
+        const path = `churches/${churchId}`;
         try {
           const { getDoc } = await import('firebase/firestore');
           const churchDoc = await getDoc(doc(db, 'churches', churchId));
@@ -708,7 +789,11 @@ export const MemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onClose
           }
         } catch (error) {
           console.error("Error fetching church:", error);
-          onError?.("Erro ao carregar código de convite.");
+          try {
+            handleFirestoreError(error, OperationType.GET, path);
+          } catch (e) {
+            onError?.("Erro ao carregar código de convite.");
+          }
         }
       };
       fetchChurch();
@@ -745,23 +830,38 @@ export const MemberModal: React.FC<ModalProps<UserProfile>> = ({ isOpen, onClose
     setLoading(true);
     try {
       if (item?.uid) {
-        await updateDoc(doc(db, 'users', item.uid), {
-          displayName,
-          email,
-          role,
-          status,
-          tags: tags.split(',').map(t => t.trim()).filter(t => t),
-          updatedAt: serverTimestamp(),
-        });
+        const path = `users/${item.uid}`;
+        try {
+          await updateDoc(doc(db, 'users', item.uid), {
+            displayName,
+            email,
+            role,
+            status,
+            tags: tags.split(',').map(t => t.trim()).filter(t => t),
+            updatedAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
         toast.success("Membro atualizado com sucesso!");
       }
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("Error saving member:", error);
-      const message = error.code === 'permission-denied' 
-        ? "Você não tem permissão para realizar esta ação." 
-        : "Erro ao salvar membro. Tente novamente.";
+      let message = "Erro ao salvar membro. Tente novamente.";
+      
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        if (error.code === 'permission-denied') {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      }
+      
       toast.error(message);
       onError?.(message);
     } finally {
@@ -926,22 +1026,42 @@ export const AddEBDTrackModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
       };
 
       if (item?.id) {
-        await updateDoc(doc(db, 'ebd_tracks', item.id), data);
+        const path = `ebd_tracks/${item.id}`;
+        try {
+          await updateDoc(doc(db, 'ebd_tracks', item.id), data);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
         toast.success("Trilha atualizada com sucesso!");
       } else {
-        await addDoc(collection(db, 'ebd_tracks'), {
-          ...data,
-          createdAt: serverTimestamp(),
-        });
+        const path = 'ebd_tracks';
+        try {
+          await addDoc(collection(db, 'ebd_tracks'), {
+            ...data,
+            createdAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
         toast.success("Trilha criada com sucesso!");
       }
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("Error saving EBD track:", error);
-      const message = error.code === 'permission-denied' 
-        ? "Você não tem permissão para realizar esta ação." 
-        : "Erro ao salvar trilha. Tente novamente.";
+      let message = "Erro ao salvar trilha. Tente novamente.";
+      
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        if (error.code === 'permission-denied') {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      }
+      
       toast.error(message);
       onError?.(message);
     } finally {
@@ -1025,14 +1145,25 @@ export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
 
   useEffect(() => {
     if (isOpen && churchId) {
-      const qCourses = query(collection(db, 'ebd_courses'), where('churchId', '==', churchId), orderBy('name'));
-      getDocs(qCourses).then(snapshot => {
-        setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
-      const qUsers = query(collection(db, 'users'), where('churchId', '==', churchId));
-      getDocs(qUsers).then(snapshot => {
-        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
+      const fetchEBDData = async () => {
+        try {
+          const qCourses = query(collection(db, 'ebd_courses'), where('churchId', '==', churchId), orderBy('name'));
+          const coursesSnapshot = await getDocs(qCourses);
+          setCourses(coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+          const qUsers = query(collection(db, 'users'), where('churchId', '==', churchId));
+          const usersSnapshot = await getDocs(qUsers);
+          setUsers(usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        } catch (error) {
+          console.error("Error fetching EBD data:", error);
+          try {
+            handleFirestoreError(error, OperationType.LIST, 'ebd_courses/users');
+          } catch (e) {
+            // Error already handled or logged
+          }
+        }
+      };
+      fetchEBDData();
     }
   }, [isOpen, churchId]);
 
@@ -1071,19 +1202,38 @@ export const AddEBDClassModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, c
       };
 
       if (item?.id) {
-        await updateDoc(doc(db, 'ebd_classes', item.id), data);
+        const path = `ebd_classes/${item.id}`;
+        try {
+          await updateDoc(doc(db, 'ebd_classes', item.id), data);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
       } else {
-        await addDoc(collection(db, 'ebd_classes'), {
-          ...data,
-          studentCount: 0,
-          createdAt: serverTimestamp(),
-        });
+        const path = 'ebd_classes';
+        try {
+          await addDoc(collection(db, 'ebd_classes'), {
+            ...data,
+            studentCount: 0,
+            createdAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving EBD class:", error);
-      onError?.("Erro ao salvar classe.");
+      let message = "Erro ao salvar classe.";
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        // Fallback to default message
+      }
+      onError?.(message);
     } finally {
       setLoading(false);
     }
@@ -1212,18 +1362,37 @@ export const AddEBDCourseModal: React.FC<ModalProps<any>> = ({ isOpen, onClose, 
       };
 
       if (item?.id) {
-        await updateDoc(doc(db, 'ebd_courses', item.id), data);
+        const path = `ebd_courses/${item.id}`;
+        try {
+          await updateDoc(doc(db, 'ebd_courses', item.id), data);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
       } else {
-        await addDoc(collection(db, 'ebd_courses'), {
-          ...data,
-          createdAt: serverTimestamp(),
-        });
+        const path = 'ebd_courses';
+        try {
+          await addDoc(collection(db, 'ebd_courses'), {
+            ...data,
+            createdAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving EBD course:", error);
-      onError?.("Erro ao salvar curso.");
+      let message = "Erro ao salvar curso.";
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        // Fallback
+      }
+      onError?.(message);
     } finally {
       setLoading(false);
     }
@@ -1320,6 +1489,11 @@ export const AddScheduleModal = ({
           setMembers(membersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile)));
         } catch (error) {
           console.error("Error fetching data:", error);
+          try {
+            handleFirestoreError(error, OperationType.LIST, 'events/users');
+          } catch (e) {
+            // Error already handled
+          }
         }
       };
       fetchEventsAndMembers();
@@ -1379,18 +1553,37 @@ export const AddScheduleModal = ({
       };
 
       if (scheduleToEdit) {
-        await updateDoc(doc(db, 'schedules', scheduleToEdit.id), scheduleData);
+        const path = `schedules/${scheduleToEdit.id}`;
+        try {
+          await updateDoc(doc(db, 'schedules', scheduleToEdit.id), scheduleData);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
       } else {
-        await addDoc(collection(db, 'schedules'), {
-          ...scheduleData,
-          createdAt: serverTimestamp()
-        });
+        const path = 'schedules';
+        try {
+          await addDoc(collection(db, 'schedules'), {
+            ...scheduleData,
+            createdAt: serverTimestamp()
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving schedule:', error);
-      onError?.('Erro ao salvar escala.');
+      let message = 'Erro ao salvar escala.';
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        // Fallback
+      }
+      onError?.(message);
     } finally {
       setLoading(false);
     }
@@ -1547,18 +1740,37 @@ export const AddEBDLessonModal: React.FC<ModalProps<any> & { classId: string }> 
       };
 
       if (item?.id) {
-        await updateDoc(doc(db, `ebd_classes/${classId}/lessons`, item.id), data);
+        const path = `ebd_classes/${classId}/lessons/${item.id}`;
+        try {
+          await updateDoc(doc(db, `ebd_classes/${classId}/lessons`, item.id), data);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, path);
+        }
       } else {
-        await addDoc(collection(db, `ebd_classes/${classId}/lessons`), {
-          ...data,
-          createdAt: serverTimestamp(),
-        });
+        const path = `ebd_classes/${classId}/lessons`;
+        try {
+          await addDoc(collection(db, `ebd_classes/${classId}/lessons`), {
+            ...data,
+            createdAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, path);
+        }
       }
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving EBD lesson:", error);
-      onError?.("Erro ao salvar lição.");
+      let message = "Erro ao salvar lição.";
+      try {
+        const errInfo = JSON.parse(error.message);
+        if (errInfo.error.includes('permission-denied')) {
+          message = "Você não tem permissão para realizar esta ação.";
+        }
+      } catch (e) {
+        // Fallback
+      }
+      onError?.(message);
     } finally {
       setLoading(false);
     }

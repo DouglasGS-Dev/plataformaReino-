@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, ChevronRight, Edit2, Trash2, Calendar } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, deleteDoc, doc, writeBatch, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import { AddMinistryModal } from './components/AdminModals';
 import { Ministry } from './types';
@@ -38,9 +38,18 @@ export default function Ministries() {
   }, [churchId]);
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este ministério?')) {
+    if (window.confirm('Tem certeza que deseja excluir este ministério? Todas as escalas vinculadas também serão excluídas.')) {
       try {
-        await deleteDoc(doc(db, 'ministries', id));
+        const batch = writeBatch(db);
+        
+        // 1. Delete the ministry itself
+        batch.delete(doc(db, 'ministries', id));
+        
+        // 2. Delete all schedules for this ministry
+        const schedulesSnapshot = await getDocs(query(collection(db, 'schedules'), where('ministryId', '==', id)));
+        schedulesSnapshot.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
         toast.success("Ministério excluído com sucesso!");
       } catch (error) {
         console.error("Error deleting ministry:", error);

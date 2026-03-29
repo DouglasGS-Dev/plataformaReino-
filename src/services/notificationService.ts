@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 
 export class NotificationService {
   static async requestPermission() {
@@ -32,14 +33,23 @@ export class NotificationService {
   }
 
   static async sendNotification(title: string, body: string) {
+    // Always show a toast as a fallback/primary in-app notification
+    toast(title, {
+      description: body,
+      duration: 10000,
+      action: {
+        label: 'Ver',
+        onClick: () => console.log('Notification clicked')
+      }
+    });
+
     if (Notification.permission === 'granted') {
       try {
         new Notification(title, {
           body,
           icon: '/favicon.ico',
           badge: '/favicon.ico',
-          tag: 'spiritual-reminder',
-          renotify: true
+          tag: 'spiritual-reminder'
         });
       } catch (e) {
         // Fallback for mobile browsers that require service workers for notifications

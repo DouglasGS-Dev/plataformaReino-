@@ -2,14 +2,21 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
-  Church, 
+  createUserWithEmailAndPassword,
+  updateProfile
+} from 'firebase/auth';
+import { auth, db, handleFirestoreError, OperationType } from '../../firebase';
+import { doc, setDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { 
+  Church as ChurchIcon, 
   User, 
   Palette, 
   CheckCircle2, 
   ArrowRight, 
   ArrowLeft, 
   Loader2,
-  Smartphone
+  Smartphone,
+  AlertCircle
 } from 'lucide-react';
 
 const COLORS = [
@@ -26,6 +33,7 @@ export default function RegisterChurch() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     churchName: '',
     membersCount: '',
@@ -52,16 +60,54 @@ export default function RegisterChurch() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
     
-    // Simulating API call and tenant creation
-    setTimeout(() => {
+    try {
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // 2. Update Auth profile
+      await updateProfile(user, {
+        displayName: formData.adminName
+      });
+
+      // 3. Create Church document
+      const churchId = `church_${Date.now()}`;
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      await setDoc(doc(db, 'churches', churchId), {
+        id: churchId,
+        name: formData.churchName,
+        inviteCode: inviteCode,
+        ownerId: user.uid,
+        primaryColor: formData.primaryColor,
+        appName: formData.appName || formData.churchName,
+        createdAt: serverTimestamp()
+      });
+
+      // 4. Create User profile document
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        email: user.email,
+        displayName: formData.adminName,
+        photoURL: '',
+        role: 'admin',
+        churchId: churchId,
+        createdAt: serverTimestamp()
+      });
+
       setIsSubmitting(false);
       setStep(4); // Success step
-    }, 2500);
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(err.message || 'Erro ao realizar cadastro. Tente novamente.');
+      setIsSubmitting(false);
+    }
   };
 
   const steps = [
-    { id: 1, title: 'Igreja', icon: Church },
+    { id: 1, title: 'Igreja', icon: ChurchIcon },
     { id: 2, title: 'Administrador', icon: User },
     { id: 3, title: 'Personalização', icon: Palette },
   ];
@@ -110,6 +156,13 @@ export default function RegisterChurch() {
 
         {/* Form Card */}
         <div className="bg-white py-8 px-4 shadow-xl shadow-slate-100/50 sm:rounded-2xl sm:px-10 border border-slate-100 mt-12">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 text-red-600 text-sm">
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+          
           <AnimatePresence mode="wait">
             {/* STEP 1: CHURCH INFO */}
             {step === 1 && (

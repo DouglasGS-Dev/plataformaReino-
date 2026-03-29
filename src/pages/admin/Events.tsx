@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Calendar as CalendarIcon, MapPin, Clock, MoreVertical, Users } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { AddEventModal } from '../../components/AdminModals';
 
@@ -34,7 +34,7 @@ export default function Events() {
       setEvents(eventsList);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching events:", error);
+      handleFirestoreError(error, OperationType.GET, 'events');
       setLoading(false);
     });
 

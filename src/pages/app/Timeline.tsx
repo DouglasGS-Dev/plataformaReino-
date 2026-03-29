@@ -49,8 +49,12 @@ export default function TimelinePage() {
       setEntries(fetchedEntries);
       setLoading(false);
     }, (error) => {
-      setLoading(false);
-      handleFirestoreError(error, OperationType.GET, `users/${user.uid}/entries`);
+      console.error("Error fetching timeline entries:", error);
+      try {
+        handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/entries`);
+      } catch (e) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Filter, MoreVertical, Users, MapPin, Calendar, Clock, User as UserIcon, Trash2 } from 'lucide-react';
-import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { collection, query, where, onSnapshot, deleteDoc, doc, writeBatch, getDocs } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { useOutletContext } from 'react-router-dom';
 import { CellModal } from '../../components/AdminModals';
 import { toast } from 'sonner';
@@ -69,28 +69,40 @@ export default function Cells() {
     if (!churchId) return;
 
     const q = query(collection(db, 'cells'), where('churchId', '==', churchId));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const cellsList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Cell));
-      setCells(cellsList);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching cells:", error);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const cellsList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Cell));
+        setCells(cellsList);
+        setLoading(false);
+      }, 
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'cells');
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [churchId]);
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta célula?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta célula? Todos os relatórios vinculados também serão excluídos.')) {
       try {
-        await deleteDoc(doc(db, 'cells', id));
+        const batch = writeBatch(db);
+        
+        // 1. Delete the cell itself
+        batch.delete(doc(db, 'cells', id));
+        
+        // 2. Delete all reports for this cell
+        const reportsSnapshot = await getDocs(query(collection(db, 'cell_reports'), where('cellId', '==', id)));
+        reportsSnapshot.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
         toast.success("Célula excluída com sucesso!");
       } catch (error) {
-        console.error("Error deleting cell:", error);
+        handleFirestoreError(error, OperationType.DELETE, `cells/${id}`);
         toast.error("Erro ao excluir célula.");
       }
     }
