@@ -10,12 +10,14 @@
     {
       "src": "/file_000000009a1071f587f9c41986550a4b.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/file_000000009a1071f587f9c41986550a4b.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
