@@ -301,6 +301,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   const [commentingOn, setCommentingOn] = useState<string | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [showRecoveryToast, setShowRecoveryToast] = useState(false);
+  const [sharingPost, setSharingPost] = useState<Post | null>(null);
   const [testimonyPostId, setTestimonyPostId] = useState<string | null>(null);
   const [testimonyText, setTestimonyText] = useState('');
   const [isSubmittingTestimony, setIsSubmittingTestimony] = useState(false);
@@ -896,26 +897,15 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
     }
   };
 
-  const handleShare = async (post: Post) => {
-    const shareData = {
-      title: 'Diário Espiritual',
-      text: `${post.authorName} compartilhou: ${post.content}`,
-      url: window.location.href,
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.error('Error sharing:', err);
-      }
+  const handleShare = (post: Post) => {
+    if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+      navigator.share({
+        title: 'Reino',
+        text: `${post.authorName} compartilhou: ${post.content}`,
+        url: window.location.href,
+      }).catch(console.error);
     } else {
-      try {
-        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-        alert('Link copiado para a área de transferência!');
-      } catch (err) {
-        console.error('Failed to copy text: ', err);
-      }
+      setSharingPost(post);
     }
   };
 
@@ -1703,6 +1693,90 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                       Publicar
                     </>
                   )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {sharingPost && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSharingPost(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 text-lg">Compartilhar</h3>
+                <button 
+                  onClick={() => setSharingPost(null)}
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6 grid grid-cols-4 gap-4">
+                <button 
+                  onClick={() => {
+                    const text = encodeURIComponent(`${sharingPost.authorName} compartilhou no Reino:\n\n"${sharingPost.content}"\n\nConfira: ${window.location.href}`);
+                    window.open(`https://wa.me/?text=${text}`, '_blank');
+                    setSharingPost(null);
+                  }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center hover:scale-110 transition-transform">
+                    <MessageCircle size={24} />
+                  </div>
+                  <span className="text-xs font-medium text-slate-600">WhatsApp</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    const url = encodeURIComponent(window.location.href);
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+                    setSharingPost(null);
+                  }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#1877F2] text-white flex items-center justify-center hover:scale-110 transition-transform">
+                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  </div>
+                  <span className="text-xs font-medium text-slate-600">Facebook</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    const text = encodeURIComponent(`Confira este post no Reino:\n\n"${sharingPost.content}"`);
+                    const url = encodeURIComponent(window.location.href);
+                    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+                    setSharingPost(null);
+                  }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <div className="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center hover:scale-110 transition-transform">
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </div>
+                  <span className="text-xs font-medium text-slate-600">X (Twitter)</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${sharingPost.authorName} compartilhou no Reino:\n\n"${sharingPost.content}"\n\nConfira: ${window.location.href}`);
+                    showToast('Link copiado!');
+                    setSharingPost(null);
+                  }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:scale-110 transition-transform">
+                    <Share2 size={24} />
+                  </div>
+                  <span className="text-xs font-medium text-slate-600">Copiar</span>
                 </button>
               </div>
             </motion.div>
