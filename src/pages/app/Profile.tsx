@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { updateProfile, User } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType } from '../../firebase';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { db, auth, storage, handleFirestoreError, OperationType } from '../../firebase';
 import { UserProfile } from '../../types';
 
 export default function ProfilePage() {
@@ -114,23 +115,49 @@ export default function ProfilePage() {
     if (!user) return;
     setIsSaving(true);
 
+    let finalPhotoURL = photoURL;
+
     try {
+      // 1. Upload photo if it's a base64 string
+      if (photoURL && photoURL.startsWith('data:image/')) {
+        console.log('Uploading photo...');
+        const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
+        await uploadString(storageRef, photoURL, 'data_url');
+        finalPhotoURL = await getDownloadURL(storageRef);
+        console.log('Photo uploaded. URL:', finalPhotoURL);
+      }
+
       // Update Auth Profile
-      await updateProfile(user, {
-        displayName,
-        photoURL
-      });
+      try {
+        console.log('Updating auth profile with photoURL:', finalPhotoURL);
+        // Firebase Auth photoURL limit is 2000 characters
+        if (finalPhotoURL && finalPhotoURL.length > 2000) {
+          console.warn('Photo URL too long for Auth profile, skipping Auth update.');
+        } else {
+          await updateProfile(user, {
+            displayName,
+            photoURL: finalPhotoURL
+          });
+          console.log('Auth profile updated.');
+        }
+      } catch (authError: any) {
+        console.warn('Auth profile update failed, but continuing to Firestore:', authError);
+        // If it fails due to URL length, we might still want to update Firestore
+      }
 
       // Update Firestore Profile
+      console.log('Updating firestore profile...');
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         displayName,
-        photoURL,
+        photoURL: finalPhotoURL,
         updatedAt: serverTimestamp()
       });
+      console.log('Firestore profile updated.');
 
       showToast('Perfil atualizado com sucesso!');
     } catch (error) {
+      console.error('Error in handleSave:', error);
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
       showToast('Erro ao atualizar perfil', 'error');
     } finally {

@@ -82,7 +82,7 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['id', 'churchId', 'authorId', 'authorName', 'authorPhoto', 'content', 'type', 'likesCount', 'commentsCount', 'media', 'aspectRatio', 'createdAt']) &&
+      return hasOnlyAllowedFields(['id', 'churchId', 'authorId', 'authorName', 'authorPhoto', 'content', 'type', 'likesCount', 'commentsCount', 'prayerCount', 'isAnswered', 'testimony', 'media', 'aspectRatio', 'createdAt']) &&
              isValidString(data.content, 5000) &&
              data.authorId == request.auth.uid;
     }
@@ -111,8 +111,8 @@ service cloud.firestore {
       allow read: if isChurchMember(resource.data.churchId);
       allow create: if isChurchMember(request.resource.data.churchId) && isValidPost(request.resource.data);
       allow update: if isAuthenticated() && (
-        (isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId)) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'commentsCount']))
+        ((isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId)) && isValidPost(request.resource.data)) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'commentsCount', 'prayerCount']))
       );
       allow delete: if isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId);
       

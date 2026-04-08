@@ -23,13 +23,8 @@ export default function AppLayout() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !localStorage.getItem('hasVisitedApp');
-    }
-    return true;
-  });
-  
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
   const navigate = useNavigate();
@@ -42,6 +37,19 @@ export default function AppLayout() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!isAuthReady) return;
+
+    if (!user) {
+      // User is not logged in. Show onboarding if they haven't visited before.
+      const hasVisited = localStorage.getItem('hasVisitedApp');
+      setShowOnboarding(!hasVisited);
+    } else {
+      // User is logged in. Do not show onboarding.
+      setShowOnboarding(false);
+    }
+  }, [isAuthReady, user]);
 
   useEffect(() => {
     if (!user) return;

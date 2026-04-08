@@ -42,6 +42,9 @@
         "type": { "type": "string", "enum": ["prayer", "testimony", "announcement"], "description": "The type of the post" },
         "likesCount": { "type": "number", "description": "The number of likes on the post" },
         "commentsCount": { "type": "number", "description": "The number of comments on the post" },
+        "prayerCount": { "type": "number", "description": "The number of people who prayed for this post" },
+        "isAnswered": { "type": "boolean", "description": "Whether the prayer request has been answered" },
+        "testimony": { "type": "string", "description": "The testimony of the answered prayer" },
         "media": { 
           "type": "array", 
           "items": { 

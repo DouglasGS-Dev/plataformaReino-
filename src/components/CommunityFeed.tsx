@@ -297,9 +297,13 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [prayedPosts, setPrayedPosts] = useState<Set<string>>(new Set());
   const [commentingOn, setCommentingOn] = useState<string | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [showRecoveryToast, setShowRecoveryToast] = useState(false);
+  const [testimonyPostId, setTestimonyPostId] = useState<string | null>(null);
+  const [testimonyText, setTestimonyText] = useState('');
+  const [isSubmittingTestimony, setIsSubmittingTestimony] = useState(false);
   const [compressingCount, setCompressingCount] = useState(0);
   const isCompressing = compressingCount > 0;
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
@@ -845,6 +849,9 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   };
 
   const handlePray = async (postId: string) => {
+    if (prayedPosts.has(postId)) return;
+
+    setPrayedPosts(prev => new Set(prev).add(postId));
     const path = `posts/${postId}`;
     try {
       await updateDoc(doc(db, 'posts', postId), {
@@ -852,25 +859,40 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
       });
       showToast('Obrigado por interceder!');
     } catch (error) {
+      setPrayedPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
       handleFirestoreError(error, OperationType.UPDATE, path);
       showToast('Erro ao registrar oração.', 'error');
     }
   };
 
-  const handleMarkAsAnswered = async (postId: string) => {
-    const testimony = prompt('Que bom! Qual foi o testemunho da resposta?');
-    if (testimony === null) return;
+  const handleMarkAsAnswered = (postId: string) => {
+    setTestimonyPostId(postId);
+    setTestimonyText('');
+  };
 
-    const path = `posts/${postId}`;
+  const submitTestimony = async () => {
+    if (!testimonyPostId || !testimonyText.trim()) return;
+    
+    setIsSubmittingTestimony(true);
+    const path = `posts/${testimonyPostId}`;
     try {
-      await updateDoc(doc(db, 'posts', postId), {
+      await updateDoc(doc(db, 'posts', testimonyPostId), {
         isAnswered: true,
-        testimony: testimony
+        testimony: testimonyText,
+        updatedAt: serverTimestamp()
       });
       showToast('Testemunho registrado com sucesso!');
+      setTestimonyPostId(null);
+      setTestimonyText('');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
-      showToast('Erro ao marcar como respondido.', 'error');
+      showToast('Erro ao registrar testemunho.', 'error');
+    } finally {
+      setIsSubmittingTestimony(false);
     }
   };
 
@@ -1299,6 +1321,25 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                     {post.content}
                   </p>
 
+                  {post.isAnswered && post.testimony && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="mb-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 relative overflow-hidden group"
+                    >
+                      <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Sparkles size={48} className="text-emerald-600" />
+                      </div>
+                      <div className="flex items-center gap-2 mb-2 text-emerald-700 font-bold text-xs uppercase tracking-widest">
+                        <CheckCircle2 size={14} />
+                        Oração Respondida
+                      </div>
+                      <p className="text-emerald-800 text-sm italic leading-relaxed relative z-10">
+                        "{post.testimony}"
+                      </p>
+                    </motion.div>
+                  )}
+
                   {post.bibleVerse && (
                     <div className="mb-4 p-3 bg-slate-50 rounded-2xl border-l-4 border-primary italic text-sm text-[var(--color-text-secondary)] flex items-start gap-3">
                       <BookOpen size={16} className="text-primary shrink-0 mt-0.5" />
@@ -1336,10 +1377,10 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handlePray(post.id)}
                         className={`flex items-center gap-2 font-medium text-sm transition-colors ${
-                          post.prayerCount ? 'text-blue-500' : 'text-[var(--color-text-tertiary)] hover:text-blue-500'
+                          prayedPosts.has(post.id) ? 'text-blue-500' : 'text-[var(--color-text-tertiary)] hover:text-blue-500'
                         }`}
                       >
-                        <Sparkles size={18} className={post.prayerCount ? "fill-blue-500" : ""} />
+                        <Sparkles size={18} className={prayedPosts.has(post.id) ? "fill-blue-500" : ""} />
                         <span>{post.prayerCount || 0} Orando</span>
                       </motion.button>
                     )}
@@ -1599,6 +1640,75 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
         cancelText="Cancelar"
         variant="danger"
       />
+
+      {/* Testimony Modal */}
+      <AnimatePresence>
+        {testimonyPostId && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-emerald-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-emerald-900">Glória a Deus!</h3>
+                    <p className="text-xs text-emerald-700 font-medium">Compartilhe seu testemunho</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setTestimonyPostId(null)}
+                  className="p-2 hover:bg-emerald-100 rounded-full text-emerald-600 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <p className="text-sm text-slate-600 mb-4">
+                  Como Deus respondeu a esta oração? Seu testemunho edificará a fé de toda a comunidade.
+                </p>
+                <textarea
+                  value={testimonyText}
+                  onChange={(e) => setTestimonyText(e.target.value)}
+                  placeholder="Escreva aqui o que Deus fez..."
+                  className="w-full min-h-[120px] p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none text-slate-800"
+                  autoFocus
+                />
+              </div>
+              
+              <div className="p-6 bg-slate-50 flex gap-3">
+                <button
+                  onClick={() => setTestimonyPostId(null)}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={submitTestimony}
+                  disabled={!testimonyText.trim() || isSubmittingTestimony}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSubmittingTestimony ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Check size={18} />
+                      Publicar
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {toast && (
         <Toast
