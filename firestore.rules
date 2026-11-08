@@ -75,14 +75,14 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'churchId', 'createdAt']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'churchId', 'status', 'tags', 'bio', 'phone', 'birthDate', 'ministry', 'socialLinks', 'createdAt', 'updatedAt']) &&
              data.uid == request.auth.uid &&
              data.role in ['user', 'pastor', 'leader', 'admin'] &&
-             isValidString(data.displayName, 100);
+             (!('displayName' in data) || data.displayName == null || isValidString(data.displayName, 100));
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['id', 'churchId', 'authorId', 'authorName', 'authorPhoto', 'content', 'type', 'likesCount', 'commentsCount', 'prayerCount', 'isAnswered', 'testimony', 'media', 'aspectRatio', 'createdAt']) &&
+      return hasOnlyAllowedFields(['id', 'churchId', 'authorId', 'authorName', 'authorPhoto', 'content', 'type', 'likesCount', 'commentsCount', 'prayerCount', 'isAnswered', 'testimony', 'isPrivate', 'media', 'aspectRatio', 'createdAt']) &&
              isValidString(data.content, 5000) &&
              data.authorId == request.auth.uid;
     }
@@ -97,7 +97,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
                     
       allow update: if isAuthenticated() && (isOwner(userId) || isChurchAdmin(resource.data.churchId)) &&
-                    (isOwner(userId) ? request.resource.data.role == resource.data.role : true) &&
+                    (isOwner(userId) ? (request.resource.data.role == resource.data.role || (resource.data.churchId == null && request.resource.data.role == 'admin') || isAdmin()) : true) &&
                     isValidUser(request.resource.data);
     }
 
@@ -108,7 +108,12 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if isChurchMember(resource.data.churchId);
+      allow read: if isChurchMember(resource.data.churchId) && (
+        !('isPrivate' in resource.data) || 
+        resource.data.isPrivate == false || 
+        isOwner(resource.data.authorId) || 
+        isIntercessorAdmin(resource.data.churchId)
+      );
       allow create: if isChurchMember(request.resource.data.churchId) && isValidPost(request.resource.data);
       allow update: if isAuthenticated() && (
         ((isOwner(resource.data.authorId) || isChurchAdmin(resource.data.churchId)) && isValidPost(request.resource.data)) ||

@@ -45,6 +45,7 @@
         "prayerCount": { "type": "number", "description": "The number of people who prayed for this post" },
         "isAnswered": { "type": "boolean", "description": "Whether the prayer request has been answered" },
         "testimony": { "type": "string", "description": "The testimony of the answered prayer" },
+        "isPrivate": { "type": "boolean", "description": "Whether the post is private (only visible to intercessors/pastors)" },
         "media": { 
           "type": "array", 
           "items": { 

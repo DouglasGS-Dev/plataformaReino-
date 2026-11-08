@@ -155,6 +155,7 @@ export interface Post {
   prayerCount?: number;
   isAnswered?: boolean;
   testimony?: string;
+  isPrivate?: boolean;
   createdAt: any;
   bibleVerse?: string;
   media?: PostMedia[];

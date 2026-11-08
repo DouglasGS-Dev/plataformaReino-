@@ -344,61 +344,81 @@ export default function Diary() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {loading ? (
-          [1, 2, 3, 4].map(i => (
-            <div key={i} className="h-48 bg-white rounded-2xl border border-slate-200 animate-pulse" />
-          ))
-        ) : filteredEntries.length === 0 ? (
-          <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
-            <p className="text-slate-400 font-medium">Nenhum registro encontrado.</p>
-          </div>
-        ) : (
-          filteredEntries.map((entry) => (
-            <motion.div
-              key={entry.id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer group relative"
-              onClick={() => {
-                setEditingEntry(entry);
-                setIsFormOpen(true);
-              }}
+        <AnimatePresence mode="popLayout">
+          {loading ? (
+            [1, 2, 3, 4].map(i => (
+              <motion.div 
+                key={`skeleton-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-48 bg-white rounded-2xl border border-slate-200 animate-pulse" 
+              />
+            ))
+          ) : filteredEntries.length === 0 ? (
+            <motion.div 
+              key="empty-state"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200"
             >
-              <div className="flex justify-between items-start mb-4">
-                <span className="px-3 py-1 bg-primary-50 text-primary text-[10px] font-bold uppercase tracking-wider rounded-full border border-primary-100">
-                  {entry.category}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">
-                  {new Date(entry.date).toLocaleDateString('pt-BR')}
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">
-                {entry.title}
-              </h3>
-              <p className="text-slate-600 text-sm line-clamp-3 leading-relaxed">
-                {entry.description}
-              </p>
-              
-              <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
-                {entry.isMemorial && (
-                  <div className="flex items-center gap-2 text-amber-600">
-                    <Sparkles size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Memorial</span>
-                  </div>
-                )}
-                {entry.reminderAt && (
-                  <div className="flex items-center gap-2 text-primary">
-                    <Bell size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">
-                      Lembrete: {new Date(entry.reminderAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                    </span>
-                  </div>
-                )}
-              </div>
+              <p className="text-slate-400 font-medium">Nenhum registro encontrado.</p>
             </motion.div>
-          ))
-        )}
+          ) : (
+            filteredEntries.map((entry, index) => (
+              <motion.div
+                key={entry.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ 
+                  duration: 0.4, 
+                  delay: Math.min(index * 0.05, 0.3),
+                  ease: [0.21, 0.47, 0.32, 0.98] 
+                }}
+                className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer group relative"
+                onClick={() => {
+                  setEditingEntry(entry);
+                  setIsFormOpen(true);
+                }}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <span className="px-3 py-1 bg-primary-50 text-primary text-[10px] font-bold uppercase tracking-wider rounded-full border border-primary-100">
+                    {entry.category}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">
+                    {new Date(entry.date).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">
+                  {entry.title}
+                </h3>
+                <p className="text-slate-600 text-sm line-clamp-3 leading-relaxed">
+                  {entry.description}
+                </p>
+                
+                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
+                  {entry.isMemorial && (
+                    <div className="flex items-center gap-2 text-amber-600">
+                      <Sparkles size={14} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Memorial</span>
+                    </div>
+                  )}
+                  {entry.reminderAt && (
+                    <div className="flex items-center gap-2 text-primary">
+                      <Bell size={14} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">
+                        Lembrete: {new Date(entry.reminderAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
       </div>
 
       {hasMore && entries.length > 0 && (

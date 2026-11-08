@@ -70,8 +70,23 @@ export default function MentorPage() {
         handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/entries`);
       }
 
+      // Fetch church context if available
+      let churchContext = '';
+      if (userProfile?.churchId) {
+        try {
+          const { getDoc } = await import('firebase/firestore');
+          const churchDoc = await getDoc(doc(db, `churches/${userProfile.churchId}`));
+          if (churchDoc.exists()) {
+            const churchData = churchDoc.data();
+            churchContext = `\nInformações da igreja do usuário:\nNome: ${churchData.name || 'Não informado'}\nVisão/Descrição: Você atua como um conselheiro parceiro desta igreja local, encorajando o membro a se envolver e buscar apoio pastoral quando necessário.`;
+          }
+        } catch (error) {
+          console.error("Failed to fetch church context", error);
+        }
+      }
+
       const context = recentEntries.length > 0 
-        ? `Recentemente, o usuário registrou: ${recentEntries.map(e => `[${e.category}] ${e.title}: ${e.description}`).join('; ')}`
+        ? `Recentemente, o usuário registrou no diário espiritual: ${recentEntries.map(e => `[${e.category}] ${e.title}: ${e.description}`).join('; ')}`
         : 'O usuário ainda não possui registros no diário.';
 
       const prompt = `
@@ -80,12 +95,12 @@ export default function MentorPage() {
         conforto em momentos de luta e celebração em momentos de vitória.
         
         Contexto do usuário: ${context}
-        Nome do usuário: ${user.displayName || 'Irmão(ã)'}
+        Nome do usuário: ${user.displayName || 'Irmão(ã)'}${churchContext}
         
         Mensagem do usuário: ${input}
         
         Responda de forma empática, use versículos bíblicos quando apropriado e mantenha um tom de discipulado.
-        Seja breve (máximo 3 parágrafos).
+        Seja breve (máximo 3 parágrafos) e aja como um Mentor amigável.
       `;
 
       const response = await ai.models.generateContent({

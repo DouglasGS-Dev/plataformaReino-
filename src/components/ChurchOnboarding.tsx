@@ -90,7 +90,7 @@ const ChurchOnboarding: React.FC<ChurchOnboardingProps> = ({ onComplete }) => {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       await updateDoc(userRef, {
         churchId: churchId,
-        role: 'member', // Default role for joined users
+        role: 'user', // Standard role for joined members
       });
 
       onComplete(churchId);

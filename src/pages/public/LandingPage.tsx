@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Users, Heart, BookOpen, Shield, Sparkles, Smartphone, Building2 } from 'lucide-react';
+import { auth, db } from '../../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const slides = [
   {
@@ -53,13 +56,52 @@ const slides = [
 export default function LandingPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is already logged in, skip both onboarding systems
+        localStorage.setItem('hasSeenLanding', 'true');
+        localStorage.setItem('hasVisitedApp', 'true');
+        
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.role === 'admin' || userData.role === 'pastor') {
+              navigate('/church-admin', { replace: true });
+            } else {
+              navigate('/app', { replace: true });
+            }
+          } else {
+            navigate('/app', { replace: true });
+          }
+        } catch (error) {
+          navigate('/app', { replace: true });
+        }
+      } else {
+        // User is not logged in, check if they've seen the landing page before
+        const hasSeenLanding = localStorage.getItem('hasSeenLanding');
+        if (hasSeenLanding) {
+          // Redirect to /app which handles its own login/onboarding logic
+          navigate('/app', { replace: true });
+        } else {
+          setLoading(false);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
       setDirection(1);
       setCurrentSlide(prev => prev + 1);
     } else {
+      localStorage.setItem('hasSeenLanding', 'true');
+      localStorage.setItem('hasVisitedApp', 'true');
       navigate('/church-login');
     }
   };
@@ -103,6 +145,14 @@ export default function LandingPage() {
 
   const slide = slides[currentSlide];
   const Icon = slide.icon;
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-slate-900 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-slate-900 overflow-hidden flex flex-col">
@@ -196,12 +246,20 @@ export default function LandingPage() {
               <div className="flex items-center gap-3">
                 <Link 
                   to="/register"
+                  onClick={() => {
+                    localStorage.setItem('hasSeenLanding', 'true');
+                    localStorage.setItem('hasVisitedApp', 'true');
+                  }}
                   className="px-6 py-4 rounded-full bg-white/10 text-white font-bold hover:bg-white/20 transition-all border border-white/20"
                 >
                   Criar Conta
                 </Link>
                 <Link 
                   to="/church-login"
+                  onClick={() => {
+                    localStorage.setItem('hasSeenLanding', 'true');
+                    localStorage.setItem('hasVisitedApp', 'true');
+                  }}
                   className="px-8 py-4 rounded-full bg-primary text-white font-bold hover:bg-primary-600 transition-all shadow-lg shadow-primary/30 flex items-center gap-2"
                 >
                   Fazer Login

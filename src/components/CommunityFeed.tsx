@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageCircle, Heart, Share2, Send, User, Sparkles, Shield, Megaphone, PenTool, Trash2, Image as ImageIcon, Video, X, ChevronLeft, ChevronRight, Maximize2, BookOpen, Play, Pause, Volume2, VolumeX, Clock, Crop, Scissors, Check, CheckCircle2, Layout } from 'lucide-react';
+import { MessageCircle, Heart, Share2, Send, User, Sparkles, Shield, Megaphone, PenTool, Trash2, Image as ImageIcon, Video, X, ChevronLeft, ChevronRight, Maximize2, BookOpen, Play, Pause, Volume2, VolumeX, Clock, Crop, Scissors, Check, CheckCircle2, Layout, Lock, Globe } from 'lucide-react';
 import { db, auth, storage, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp, limit, startAfter, getDocs, QueryDocumentSnapshot, DocumentData, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -291,6 +291,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [newPost, setNewPost] = useState('');
   const [postType, setPostType] = useState<'prayer' | 'testimony' | 'announcement'>('prayer');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [bibleVerse, setBibleVerse] = useState('');
   const [selectedMedia, setSelectedMedia] = useState<PostMedia[]>([]);
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '16:9' | '9:16'>('16:9');
@@ -622,6 +623,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
           await setDoc(doc(db, 'posts', editingPost.id), {
             content: newPost,
             type: postType,
+            isPrivate: postType === 'prayer' ? isPrivate : false,
             bibleVerse: bibleVerse || null,
             media: selectedMedia.length > 0 ? selectedMedia : null,
             aspectRatio: selectedMedia.length > 0 ? aspectRatio : null,
@@ -643,8 +645,11 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
           authorPhoto: auth.currentUser.photoURL || '',
           content: newPost,
           type: postType,
+          isPrivate: postType === 'prayer' ? isPrivate : false,
           likesCount: 0,
           commentsCount: 0,
+          prayerCount: 0,
+          isAnswered: false,
           createdAt: serverTimestamp(),
           bibleVerse: bibleVerse || null,
           media: selectedMedia.length > 0 ? selectedMedia : null,
@@ -663,6 +668,7 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
       setSelectedMedia([]);
       setAspectRatio('16:9');
       setPostType('prayer');
+      setIsPrivate(false);
     } catch (error) {
       console.error("Error saving post:", error);
     } finally {
@@ -1200,6 +1206,21 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                 </button>
               );
             })}
+
+            {postType === 'prayer' && (
+              <button
+                onClick={() => setIsPrivate(!isPrivate)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  isPrivate
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200 shadow-sm scale-105'
+                    : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+                }`}
+                title={isPrivate ? 'Visível apenas para pastores e intercessores' : 'Visível para toda a igreja'}
+              >
+                {isPrivate ? <Lock size={16} /> : <Globe size={16} />}
+                {isPrivate ? 'Confidencial' : 'Público'}
+              </button>
+            )}
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
             {editingPost && (
@@ -1230,23 +1251,46 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
 
       {/* Feed */}
       <div className="space-y-6">
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {loadingPosts ? (
-            <>
+            <motion.div key="skeletons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
               <SkeletonPost />
               <SkeletonPost />
               <SkeletonPost />
-            </>
+            </motion.div>
+          ) : posts.length === 0 ? (
+            <motion.div 
+              key="empty-state"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-12"
+            >
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="text-slate-400" size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Nenhuma publicação</h3>
+              <p className="text-slate-500 max-w-sm mx-auto">
+                Seja o primeiro a compartilhar algo com a comunidade!
+              </p>
+            </motion.div>
           ) : (
-            posts.map(post => {
+            posts.map((post, index) => {
               const config = getTypeConfig(post.type);
               const TypeIcon = config.icon;
               
               return (
                 <motion.div
                   key={post.id}
+                  layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ 
+                    duration: 0.4, 
+                    delay: Math.min(index * 0.05, 0.3),
+                    ease: [0.21, 0.47, 0.32, 0.98] 
+                  }}
                   className="glass-card p-5 md:p-6 rounded-3xl bg-white shadow-sm border border-[var(--color-border)]"
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -1276,6 +1320,12 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                         <TypeIcon size={14} />
                         {config.label}
                       </div>
+                      {post.isPrivate && (
+                        <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                          <Lock size={12} />
+                          Confidencial
+                        </div>
+                      )}
                       {(post.authorId === auth.currentUser?.uid || userRole === 'admin') && (
                         <div className="flex items-center gap-1 ml-2">
                           {post.authorId === auth.currentUser?.uid && (

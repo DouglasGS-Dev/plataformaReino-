@@ -245,29 +245,44 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
       </div>
 
       {/* Prayers Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-48 animate-pulse rounded-3xl border border-slate-100 bg-white"></div>
-          ))}
-        </div>
-      ) : filteredPrayers.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-200 bg-white py-20 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-300">
-            <Heart size={32} />
-          </div>
-          <p className="font-medium text-slate-500">Nenhum pedido encontrado nesta categoria.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-          <AnimatePresence mode="popLayout">
-            {filteredPrayers.map((prayer) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+        <AnimatePresence mode="popLayout">
+          {loading ? (
+            [1, 2, 3, 4].map(i => (
+              <motion.div 
+                key={`skeleton-${i}`} 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-48 animate-pulse rounded-3xl border border-slate-100 bg-white"
+              />
+            ))
+          ) : filteredPrayers.length === 0 ? (
+            <motion.div 
+              key="empty-state"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="col-span-full rounded-3xl border border-dashed border-slate-200 bg-white py-20 text-center"
+            >
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-300">
+                <Heart size={32} />
+              </div>
+              <p className="font-medium text-slate-500">Nenhum pedido encontrado nesta categoria.</p>
+            </motion.div>
+          ) : (
+            filteredPrayers.map((prayer, index) => (
               <motion.div
                 key={prayer.id}
                 layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ 
+                  duration: 0.4, 
+                  delay: Math.min(index * 0.05, 0.3),
+                  ease: [0.21, 0.47, 0.32, 0.98] 
+                }}
                 className={`group relative rounded-3xl border bg-white p-4 transition-all hover:-translate-y-1 hover:shadow-xl sm:p-6 ${
                   prayer.status === 'answered' ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-100'
                 }`}
@@ -351,10 +366,10 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                   </div>
                 </div>
               </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+            ))
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Create Modal */}
       <AnimatePresence>

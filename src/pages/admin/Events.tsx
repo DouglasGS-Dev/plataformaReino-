@@ -13,6 +13,8 @@ interface Event {
   location: string;
   category: string;
   description: string;
+  churchId: string;
+  createdAt: any;
 }
 
 export default function Events() {
@@ -21,6 +23,7 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | undefined>(undefined);
 
   useEffect(() => {
     if (!churchId) return;
@@ -55,7 +58,10 @@ export default function Events() {
           <p className="text-slate-500 mt-1">Organize cultos, conferências e atividades da igreja.</p>
         </div>
         <button 
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => {
+            setEditingEvent(undefined);
+            setIsAddModalOpen(true);
+          }}
           className="w-full md:w-auto flex items-center justify-center px-4 py-2 primary-gradient text-white rounded-lg hover:opacity-90 transition-all shadow-sm"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -126,8 +132,14 @@ export default function Events() {
                         <Users size={14} />
                         <span>Inscrições abertas</span>
                       </div>
-                      <button className="text-sm font-semibold text-primary hover:text-primary-700 transition-colors">
-                        Gerenciar
+                      <button 
+                        onClick={() => {
+                          setEditingEvent(event);
+                          setIsAddModalOpen(true);
+                        }}
+                        className="text-sm font-semibold text-primary hover:text-primary-700 transition-colors"
+                      >
+                        Editar
                       </button>
                     </div>
                   </div>
@@ -148,8 +160,12 @@ export default function Events() {
 
       <AddEventModal 
         isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingEvent(undefined);
+        }} 
         churchId={churchId} 
+        item={editingEvent}
       />
     </div>
   );

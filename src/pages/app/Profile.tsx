@@ -4,13 +4,15 @@ import { motion } from 'motion/react';
 import { 
   User as UserIcon, Mail, Camera, Save, 
   LogOut, Shield, Bell, CheckCircle2,
-  ChevronRight, AlertCircle, Trash2, Upload
+  ChevronRight, AlertCircle, Trash2, Upload,
+  Church as ChurchIcon
 } from 'lucide-react';
 import { updateProfile, User } from 'firebase/auth';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage, handleFirestoreError, OperationType } from '../../firebase';
-import { UserProfile } from '../../types';
+import { UserProfile, Church } from '../../types';
+import JoinChurchModal from '../../components/JoinChurchModal';
 
 export default function ProfilePage() {
   const { user, userProfile, handleLogout } = useOutletContext<{ 
@@ -24,6 +26,9 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [churchInfo, setChurchInfo] = useState<Church | null>(null);
+  const [loadingChurch, setLoadingChurch] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,6 +37,34 @@ export default function ProfilePage() {
       setPhotoURL(user.photoURL || '');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!userProfile?.churchId) {
+      setChurchInfo(null);
+      return;
+    }
+
+    const fetchChurch = async () => {
+      setLoadingChurch(true);
+      try {
+        const churchDoc = await getDoc(doc(db, 'churches', userProfile.churchId!));
+        if (churchDoc.exists()) {
+          setChurchInfo({
+            id: churchDoc.id,
+            ...churchDoc.data()
+          } as Church);
+        } else {
+          setChurchInfo(null);
+        }
+      } catch (err) {
+        console.error('Error fetching church in profile:', err);
+      } finally {
+        setLoadingChurch(false);
+      }
+    };
+
+    fetchChurch();
+  }, [userProfile?.churchId]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -323,26 +356,68 @@ export default function ProfilePage() {
 
         <div className="space-y-6">
           <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-6">Sua Igreja</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-slate-900">Sua Igreja</h3>
+              <div className="w-8 h-8 rounded-xl bg-primary-50 text-primary flex items-center justify-center">
+                <ChurchIcon size={18} />
+              </div>
+            </div>
+
             {userProfile?.churchId ? (
               <div className="space-y-4">
-                <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100">
-                  <p className="text-xs font-bold text-primary-400 uppercase tracking-widest mb-1">Igreja Atual</p>
-                  <p className="text-sm font-bold text-primary-900">Igreja Batista Central</p>
+                <div className="p-4 bg-primary-50/70 rounded-2xl border border-primary-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-primary-500 uppercase tracking-widest">Igreja Conectada</p>
+                    {churchInfo?.inviteCode && (
+                      <span className="text-[10px] font-mono font-bold bg-white px-2 py-0.5 rounded text-primary border border-primary-200">
+                        Código: {churchInfo.inviteCode}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-base font-bold text-primary-950">
+                    {loadingChurch ? 'Carregando congregação...' : (churchInfo?.name || 'Igreja Vinculada')}
+                  </p>
+                  {churchInfo?.address && (
+                    <p className="text-xs text-slate-500">{churchInfo.address}</p>
+                  )}
                 </div>
-                <button className="w-full py-3 text-sm font-bold text-slate-500 hover:text-primary transition-colors">
+
+                <button 
+                  onClick={() => setIsJoinModalOpen(true)}
+                  className="w-full py-3 text-sm font-bold text-slate-600 hover:text-primary bg-slate-50 hover:bg-primary-50/50 rounded-2xl border border-slate-200 hover:border-primary-200 transition-all"
+                >
                   Trocar de Igreja
                 </button>
               </div>
             ) : (
-              <div className="text-center space-y-4">
-                <p className="text-sm text-slate-500">Você ainda não está vinculado a uma igreja.</p>
-                <button className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all">
-                  Vincular Igreja
+              <div className="text-center space-y-4 py-2">
+                <p className="text-sm text-slate-500">
+                  Você ainda não está vinculado a uma igreja no REINO.
+                </p>
+                <button 
+                  onClick={() => setIsJoinModalOpen(true)}
+                  className="w-full py-3.5 bg-primary text-white rounded-2xl font-bold hover:bg-primary-600 transition-all shadow-md shadow-primary/25"
+                >
+                  Conectar a uma Igreja
                 </button>
               </div>
             )}
           </div>
+
+          <JoinChurchModal
+            isOpen={isJoinModalOpen}
+            onClose={() => setIsJoinModalOpen(false)}
+            currentChurchId={userProfile?.churchId}
+            onSuccess={(churchId, name) => {
+              setChurchInfo(prev => ({
+                id: churchId,
+                name,
+                inviteCode: '',
+                ownerId: '',
+                createdAt: null
+              }));
+            }}
+          />
 
           <div className="bg-red-50 p-8 rounded-3xl border border-red-100 shadow-sm space-y-6">
             <div>
