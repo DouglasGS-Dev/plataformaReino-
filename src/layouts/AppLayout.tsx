@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   PenTool, BookOpen, Sparkles, Clock, LayoutDashboard, 
   User as UserIcon, Users, LogOut, LogIn, Plus, 
-  Network, Calendar, Book, Heart, ShoppingBag, Menu
+  Network, Calendar, Book, Heart, ShoppingBag, Menu, Smartphone
 } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, signOut, User, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -15,12 +15,14 @@ import EnvironmentSwitcher from '../components/EnvironmentSwitcher';
 import { Logo } from '../components/Logo';
 import { NotificationService } from '../services/notificationService';
 import Onboarding from '../components/Onboarding';
+import InstallAppModal from '../components/InstallAppModal';
 
 export default function AppLayout() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -239,7 +241,23 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100 space-y-4">
+        <div className="p-4 border-t border-slate-100 space-y-3">
+          <button
+            onClick={() => setIsInstallModalOpen(true)}
+            className={`w-full flex items-center gap-2 p-2.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-bold transition-all ${
+              isSidebarCollapsed ? 'justify-center p-2' : 'justify-between'
+            }`}
+            title="Instalar Aplicativo no Celular"
+          >
+            <div className="flex items-center gap-2">
+              <Smartphone size={16} />
+              {!isSidebarCollapsed && <span>Instalar App</span>}
+            </div>
+            {!isSidebarCollapsed && (
+              <span className="text-[10px] bg-primary text-white px-1.5 py-0.5 rounded font-bold">PWA</span>
+            )}
+          </button>
+
           <EnvironmentSwitcher userProfile={userProfile} />
           {user ? (
             <div className={`flex items-center bg-slate-50 p-3 rounded-xl border border-slate-100 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
@@ -275,6 +293,14 @@ export default function AppLayout() {
       <header className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-100 sticky top-0 z-30">
         <Logo className="w-8 h-8" showText={true} />
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsInstallModalOpen(true)}
+            className="p-1.5 text-primary hover:bg-primary-50 rounded-xl transition-colors flex items-center gap-1 text-xs font-bold border border-primary/20"
+            title="Instalar App no Celular"
+          >
+            <Smartphone size={16} />
+            <span className="hidden xs:inline text-[11px]">Instalar</span>
+          </button>
           <EnvironmentSwitcher userProfile={userProfile} />
           {user ? (
             <NavLink to="/app/profile" className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-100">
@@ -331,6 +357,11 @@ export default function AppLayout() {
         onLogin={handleLogin}
         loading={authLoading}
         error={authError}
+      />
+
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
       />
     </div>
   );

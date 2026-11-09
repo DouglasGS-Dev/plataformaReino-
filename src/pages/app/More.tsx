@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -19,14 +19,18 @@ import {
   Settings,
   ShieldCheck,
   HelpCircle,
-  Share2
+  Share2,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { motion } from 'motion/react';
+import InstallAppModal from '../../components/InstallAppModal';
 
 export default function AppMore() {
   const navigate = useNavigate();
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const menuSections = [
     {
@@ -105,11 +109,46 @@ export default function AppMore() {
           </div>
         ))}
 
+        {/* PWA / APK Mobile App Banner */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-emerald-50 p-5 rounded-3xl border border-primary/20 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 shadow-md shadow-primary/20">
+              <Smartphone size={20} />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-sm text-slate-900">Aplicativo para Celular</h4>
+              <p className="text-xs text-slate-500">Instale no seu iPhone, Android ou gere o APK para testes.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsInstallModalOpen(true)}
+            className="w-full py-3 bg-primary hover:bg-primary-600 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-primary/20"
+          >
+            <Download size={14} />
+            Instalar App ou Gerar APK
+          </button>
+        </div>
+
         <div className="space-y-3">
           <h3 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider ml-2">
             Configurações e Suporte
           </h3>
           <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            <button 
+              onClick={() => setIsInstallModalOpen(true)}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors border-b border-slate-50"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-primary/10 text-primary">
+                  <Smartphone size={20} />
+                </div>
+                <div className="text-left">
+                  <span className="font-medium text-slate-700 block">Instalar Aplicativo no Celular</span>
+                  <span className="text-[11px] text-slate-400 block">iPhone, Android e APK</span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300" />
+            </button>
             <button className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors border-b border-slate-50">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-100 text-slate-600">
@@ -150,6 +189,11 @@ export default function AppMore() {
             </button>
           </div>
         </div>
+
+        <InstallAppModal
+          isOpen={isInstallModalOpen}
+          onClose={() => setIsInstallModalOpen(false)}
+        />
 
         <div className="text-center py-4">
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
