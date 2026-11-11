@@ -21,8 +21,9 @@ export default function ProfilePage() {
     handleLogout: () => void;
   }>();
 
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
+  const [displayName, setDisplayName] = useState(userProfile?.displayName || user?.displayName || '');
+  const [photoURL, setPhotoURL] = useState(userProfile?.photoURL || user?.photoURL || '');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -32,11 +33,14 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user) {
+    if (userProfile) {
+      setDisplayName(userProfile.displayName || user?.displayName || '');
+      setPhotoURL(userProfile.photoURL || user?.photoURL || '');
+    } else if (user) {
       setDisplayName(user.displayName || '');
       setPhotoURL(user.photoURL || '');
     }
-  }, [user]);
+  }, [userProfile, user]);
 
   useEffect(() => {
     if (!userProfile?.churchId) {
@@ -80,10 +84,11 @@ export default function ProfilePage() {
       return;
     }
 
+    setSelectedFile(file);
     setIsUploading(true);
     
     try {
-      // Create a FileReader to read the image
+      // Create a FileReader to generate a fast local preview
       const reader = new FileReader();
       reader.readAsDataURL(file);
       
@@ -92,7 +97,7 @@ export default function ProfilePage() {
         img.src = event.target?.result as string;
         
         img.onload = () => {
-          // Resize image using canvas
+          // Resize image using canvas for compressed fallback
           const canvas = document.createElement('canvas');
           const MAX_WIDTH = 300;
           const MAX_HEIGHT = 300;
@@ -117,10 +122,10 @@ export default function ProfilePage() {
           ctx?.drawImage(img, 0, 0, width, height);
           
           // Get compressed base64 string
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
           setPhotoURL(dataUrl);
           setIsUploading(false);
-          showToast('Imagem carregada com sucesso! Clique em Salvar Alterações.');
+          showToast('Imagem selecionada! Clique em "Salvar Alterações".');
           
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -151,48 +156,82 @@ export default function ProfilePage() {
     let finalPhotoURL = photoURL;
 
     try {
-      // 1. Upload photo if it's a base64 string
-      if (photoURL && photoURL.startsWith('data:image/')) {
-        console.log('Uploading photo...');
-        const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
-        await uploadString(storageRef, photoURL, 'data_url');
-        finalPhotoURL = await getDownloadURL(storageRef);
-        console.log('Photo uploaded. URL:', finalPhotoURL);
+      // 1. Upload photo using uploadBytesResumable (same method as posts) if file or dataUrl present
+      if (selectedFile || (photoURL && photoURL.startsWith('data:image/'))) {
+        try {
+          console.log('Uploading profile photo to Firebase Storage...');
+          const { uploadBytesResumable, ref: storageRefFn, getDownloadURL: getUrlFn } = await import('firebase/storage');
+          const fileId = `profile_${user.uid}_${Date.now()}.jpg`;
+          const storagePath = `users/${user.uid}/${fileId}`;
+          const storageRef = storageRefFn(storage, storagePath);
+
+          let uploadTarget: Blob | File;
+          if (selectedFile) {
+            uploadTarget = selectedFile;
+          } else {
+            const response = await fetch(photoURL);
+            uploadTarget = await response.blob();
+          }
+
+          const uploadTask = uploadBytesResumable(storageRef, uploadTarget);
+
+          finalPhotoURL = await new Promise<string>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Storage upload timeout'));
+            }, 5000);
+
+            uploadTask.on(
+              'state_changed',
+              null,
+              (err) => {
+                clearTimeout(timeout);
+                reject(err);
+              },
+              async () => {
+                clearTimeout(timeout);
+                try {
+                  const url = await getUrlFn(uploadTask.snapshot.ref);
+                  resolve(url);
+                } catch (e) {
+                  reject(e);
+                }
+              }
+            );
+          });
+          console.log('Photo uploaded to Storage successfully! URL:', finalPhotoURL);
+        } catch (storageErr) {
+          console.warn('Firebase Storage upload failed/timeout. Saving compressed image directly to Firestore:', storageErr);
+          finalPhotoURL = photoURL; // Fallback to compressed base64 data URL
+        }
       }
 
-      // Update Auth Profile
+      // 2. Update Auth Profile (if URL is short enough)
       try {
-        console.log('Updating auth profile with photoURL:', finalPhotoURL);
-        // Firebase Auth photoURL limit is 2000 characters
-        if (finalPhotoURL && finalPhotoURL.length > 2000) {
-          console.warn('Photo URL too long for Auth profile, skipping Auth update.');
+        if (finalPhotoURL && !finalPhotoURL.startsWith('data:image/') && finalPhotoURL.length < 2000) {
+          await updateProfile(user, { displayName, photoURL: finalPhotoURL });
         } else {
-          await updateProfile(user, {
-            displayName,
-            photoURL: finalPhotoURL
-          });
-          console.log('Auth profile updated.');
+          await updateProfile(user, { displayName });
         }
       } catch (authError: any) {
-        console.warn('Auth profile update failed, but continuing to Firestore:', authError);
-        // If it fails due to URL length, we might still want to update Firestore
+        console.warn('Auth profile update skipped:', authError);
       }
 
-      // Update Firestore Profile
-      console.log('Updating firestore profile...');
+      // 3. Update Firestore Profile (Primary Source of Truth)
+      console.log('Updating firestore profile with photoURL...');
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
-        displayName,
-        photoURL: finalPhotoURL,
+        displayName: displayName.trim() || user.displayName || 'Membro',
+        photoURL: finalPhotoURL || '',
         updatedAt: serverTimestamp()
       });
-      console.log('Firestore profile updated.');
+      console.log('Firestore profile updated successfully.');
 
+      setSelectedFile(null);
+      setPhotoURL(finalPhotoURL);
       showToast('Perfil atualizado com sucesso!');
     } catch (error) {
       console.error('Error in handleSave:', error);
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
-      showToast('Erro ao atualizar perfil', 'error');
+      showToast('Erro ao atualizar perfil. Tente novamente.', 'error');
     } finally {
       setIsSaving(false);
     }

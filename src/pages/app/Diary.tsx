@@ -169,8 +169,8 @@ export default function Diary() {
         const postData = {
           churchId: userProfile.churchId,
           authorId: user.uid,
-          authorName: user.displayName || 'Membro',
-          authorPhoto: user.displayName ? (user.photoURL || '') : '',
+          authorName: userProfile?.displayName || user.displayName || 'Membro',
+          authorPhoto: userProfile?.photoURL || user?.photoURL || '',
           content: `Compartilhou um novo registro no diário: "${newEntry.title}"\n\n${newEntry.description.length > 200 ? newEntry.description.substring(0, 200) + '...' : newEntry.description}`,
           type: newEntry.category === 'Pedidos de oração' ? 'prayer' : 'testimony',
           bibleVerse: newEntry.bibleVerse || null,

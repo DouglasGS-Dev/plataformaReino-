@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, User, Image as ImageIcon, X, Loader2 } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, addDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
+import { UserAvatar } from './UIComponents';
 
 interface Message {
   id: string;
@@ -26,7 +27,17 @@ export default function CellChat({ cellId, cellName, onClose }: CellChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const unsubscribe = onSnapshot(userRef, (snap) => {
+      if (snap.exists()) setUserProfile(snap.data());
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!cellId) return;
@@ -74,8 +85,8 @@ export default function CellChat({ cellId, cellName, onClose }: CellChatProps) {
         await addDoc(collection(db, 'cells', cellId, 'messages'), {
           cellId,
           authorId: auth.currentUser.uid,
-          authorName: auth.currentUser.displayName || 'Membro',
-          authorPhoto: auth.currentUser.photoURL || '',
+          authorName: userProfile?.displayName || auth.currentUser.displayName || 'Membro',
+          authorPhoto: userProfile?.photoURL || auth.currentUser.photoURL || '',
           content: newMessage.trim(),
           type: 'text',
           createdAt: serverTimestamp()
@@ -152,13 +163,11 @@ export default function CellChat({ cellId, cellName, onClose }: CellChatProps) {
                 )}
                 <div className={`flex items-end gap-2 max-w-[85%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                   {!isMe && (
-                    <div className="w-8 h-8 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 shrink-0 overflow-hidden">
-                      {msg.authorPhoto ? (
-                        <img src={msg.authorPhoto} alt={msg.authorName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <User size={16} />
-                      )}
-                    </div>
+                    <UserAvatar 
+                      src={msg.authorPhoto} 
+                      name={msg.authorName} 
+                      size="sm"
+                    />
                   )}
                   <div className={`p-3 rounded-2xl text-sm shadow-sm ${
                     isMe 

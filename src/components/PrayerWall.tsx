@@ -31,7 +31,7 @@ import {
   Sparkles,
   MoreHorizontal
 } from 'lucide-react';
-import { Toast } from './UIComponents';
+import { Toast, UserAvatar } from './UIComponents';
 
 interface PrayerWallProps {
   churchId: string;
@@ -322,10 +322,10 @@ export default function PrayerWall({ churchId, userProfile }: PrayerWallProps) {
                 {/* Footer */}
                 <div className="flex items-center justify-between border-t border-slate-50 pt-4">
                   <div className="flex items-center gap-3">
-                    <img 
-                      src={prayer.authorPhoto || `https://ui-avatars.com/api/?name=${prayer.authorName}&background=random`}
-                      alt={prayer.authorName}
-                      className="h-8 w-8 rounded-full border-2 border-white object-cover shadow-sm"
+                    <UserAvatar 
+                      src={prayer.authorPhoto} 
+                      name={prayer.authorName} 
+                      size="sm"
                     />
                     <div className="text-left">
                       <p className="text-xs font-bold text-slate-900">{prayer.authorName}</p>

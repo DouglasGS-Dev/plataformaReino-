@@ -2,47 +2,68 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
+const safeLazy = (importFn: () => Promise<any>) =>
+  lazy(async () => {
+    try {
+      const res = await importFn();
+      sessionStorage.removeItem('chunk_reload');
+      return res;
+    } catch (error) {
+      console.warn('Retrying dynamic import after error:', error);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      try {
+        return await importFn();
+      } catch (retryError) {
+        if (!sessionStorage.getItem('chunk_reload')) {
+          sessionStorage.setItem('chunk_reload', 'true');
+          window.location.reload();
+        }
+        throw retryError;
+      }
+    }
+  });
+
 // Layouts
-const PublicLayout = lazy(() => import('./layouts/PublicLayout'));
-const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
-const AppLayout = lazy(() => import('./layouts/AppLayout'));
+const PublicLayout = safeLazy(() => import('./layouts/PublicLayout'));
+const AdminLayout = safeLazy(() => import('./layouts/AdminLayout'));
+const AppLayout = safeLazy(() => import('./layouts/AppLayout'));
 
 // Pages
-const LandingPage = lazy(() => import('./pages/public/LandingPage'));
-const RegisterChurch = lazy(() => import('./pages/public/RegisterChurch'));
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const Members = lazy(() => import('./Members'));
-const AdminCells = lazy(() => import('./pages/admin/Cells'));
-const Finance = lazy(() => import('./pages/admin/Finance'));
-const AdminEvents = lazy(() => import('./pages/admin/Events'));
-const AdminMinistries = lazy(() => import('./Ministries'));
-const AdminEBD = lazy(() => import('./pages/admin/EBD'));
-const AdminMarketplace = lazy(() => import('./pages/admin/Marketplace'));
-const AdminSchedules = lazy(() => import('./Schedules'));
-const AdminVisitors = lazy(() => import('./pages/admin/Visitors'));
-const Settings = lazy(() => import('./components/Settings'));
+const LandingPage = safeLazy(() => import('./pages/public/LandingPage'));
+const RegisterChurch = safeLazy(() => import('./pages/public/RegisterChurch'));
+const AdminDashboard = safeLazy(() => import('./pages/admin/AdminDashboard'));
+const Members = safeLazy(() => import('./Members'));
+const AdminCells = safeLazy(() => import('./pages/admin/Cells'));
+const Finance = safeLazy(() => import('./pages/admin/Finance'));
+const AdminEvents = safeLazy(() => import('./pages/admin/Events'));
+const AdminMinistries = safeLazy(() => import('./Ministries'));
+const AdminEBD = safeLazy(() => import('./pages/admin/EBD'));
+const AdminMarketplace = safeLazy(() => import('./pages/admin/Marketplace'));
+const AdminSchedules = safeLazy(() => import('./Schedules'));
+const AdminVisitors = safeLazy(() => import('./pages/admin/Visitors'));
+const Settings = safeLazy(() => import('./components/Settings'));
 
 // Member App Pages
-const Feed = lazy(() => import('./pages/admin/Feed'));
-const Diary = lazy(() => import('./pages/app/Diary'));
-const Devotional = lazy(() => import('./pages/admin/Devotional'));
-const Mentor = lazy(() => import('./pages/app/Mentor'));
-const Timeline = lazy(() => import('./pages/app/Timeline'));
-const Prayers = lazy(() => import('./pages/app/Prayers'));
-const Dashboard = lazy(() => import('./layouts/Dashboard'));
-const AppEBD = lazy(() => import('./pages/app/EBD'));
-const AppCells = lazy(() => import('./pages/app/Cells'));
-const AppMinistries = lazy(() => import('./pages/app/Ministries'));
-const AppEvents = lazy(() => import('./pages/app/Events'));
-const AppMarketplace = lazy(() => import('./pages/app/Marketplace'));
-const AppSchedules = lazy(() => import('./pages/app/Schedules'));
-const AppMore = lazy(() => import('./pages/app/More'));
-const Giving = lazy(() => import('./pages/app/Giving'));
-const Profile = lazy(() => import('./pages/app/Profile'));
-const PlaceholderPage = lazy(() => import('./pages/app/PlaceholderPage'));
+const Feed = safeLazy(() => import('./pages/admin/Feed'));
+const Diary = safeLazy(() => import('./pages/app/Diary'));
+const Devotional = safeLazy(() => import('./pages/admin/Devotional'));
+const Mentor = safeLazy(() => import('./pages/app/Mentor'));
+const Timeline = safeLazy(() => import('./pages/app/Timeline'));
+const Prayers = safeLazy(() => import('./pages/app/Prayers'));
+const Dashboard = safeLazy(() => import('./layouts/Dashboard'));
+const AppEBD = safeLazy(() => import('./pages/app/EBD'));
+const AppCells = safeLazy(() => import('./pages/app/Cells'));
+const AppMinistries = safeLazy(() => import('./pages/app/Ministries'));
+const AppEvents = safeLazy(() => import('./pages/app/Events'));
+const AppMarketplace = safeLazy(() => import('./pages/app/Marketplace'));
+const AppSchedules = safeLazy(() => import('./pages/app/Schedules'));
+const AppMore = safeLazy(() => import('./pages/app/More'));
+const Giving = safeLazy(() => import('./pages/app/Giving'));
+const Profile = safeLazy(() => import('./pages/app/Profile'));
+const PlaceholderPage = safeLazy(() => import('./pages/app/PlaceholderPage'));
 
 // Auth Pages
-const ChurchLogin = lazy(() => import('./pages/auth/ChurchLogin'));
+const ChurchLogin = safeLazy(() => import('./pages/auth/ChurchLogin'));
 
 const LoadingFallback = () => (
   <div className="min-h-screen bg-white flex items-center justify-center">

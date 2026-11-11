@@ -14,6 +14,7 @@ const SpiritualMentor = lazy(() => import('../../components/SpiritualMentor'));
 const UserProfileComponent = lazy(() => import('../../components/UserProfile').then(m => ({ default: m.UserProfile })));
 
 import { BaseModal } from '../../components/BaseModal';
+import { UserAvatar } from '../../components/UIComponents';
 import { SpiritualEntry, Category, UserProfile } from '../../types';
 import { auth, db, handleFirestoreError, OperationType } from '../../firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
@@ -440,8 +441,8 @@ export default function App() {
           const postData = {
             churchId: userProfile.churchId,
             authorId: user.uid,
-            authorName: user.displayName || 'Membro',
-            authorPhoto: user.photoURL || '',
+            authorName: userProfile?.displayName || user.displayName || 'Membro',
+            authorPhoto: userProfile?.photoURL || user.photoURL || '',
             content: `Compartilhou um novo registro no diário: "${newEntry.title}"\n\n${newEntry.description.length > 200 ? newEntry.description.substring(0, 200) + '...' : newEntry.description}`,
             type: newEntry.category === 'Pedidos de oração' ? 'prayer' : 'testimony',
             bibleVerse: newEntry.bibleVerse || null,
@@ -490,20 +491,20 @@ export default function App() {
   const handleDeleteEntry = async (entryId: string) => {
     if (!user) return;
     try {
-      const batch = writeBatch(db);
-      
       // 1. Delete the diary entry
-      batch.delete(doc(db, `users/${user.uid}/entries/${entryId}`));
+      await deleteDoc(doc(db, `users/${user.uid}/entries/${entryId}`));
       
-      // 2. Delete the associated post if it exists
+      // 2. Delete associated post if it exists
       const postId = `post_diary_${entryId}`;
-      batch.delete(doc(db, 'posts', postId));
-      
-      // 3. Delete all comments for the associated post
-      const commentsSnapshot = await getDocs(collection(db, 'posts', postId, 'comments'));
-      commentsSnapshot.forEach(d => batch.delete(d.ref));
-      
-      await batch.commit();
+      try {
+        const commentsSnapshot = await getDocs(collection(db, 'posts', postId, 'comments'));
+        if (!commentsSnapshot.empty) {
+          await Promise.all(commentsSnapshot.docs.map(d => deleteDoc(d.ref).catch(() => {})));
+        }
+        await deleteDoc(doc(db, 'posts', postId));
+      } catch (err) {
+        // Post didn't exist or already deleted
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `users/${user.uid}/entries/${entryId}`);
     }
@@ -634,15 +635,13 @@ export default function App() {
                 onClick={() => setView('profile')}
                 className="flex items-center gap-3 overflow-hidden text-left hover:bg-slate-100 p-1 rounded-lg transition-colors flex-1"
               >
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" loading="lazy" />
-                ) : (
-                  <div className="w-8 h-8 bg-[var(--color-primary-100)] rounded-full flex items-center justify-center shrink-0">
-                    <Users size={14} className="text-[var(--color-primary-600)]" />
-                  </div>
-                )}
+                <UserAvatar 
+                  src={userProfile?.photoURL || user.photoURL} 
+                  name={userProfile?.displayName || user.displayName} 
+                  size="sm"
+                />
                 <div className="text-sm font-medium truncate text-[var(--color-text-primary)]">
-                  {user.displayName || 'Usuário'}
+                  {userProfile?.displayName || user.displayName || 'Usuário'}
                 </div>
               </button>
               <button onClick={() => setIsLogoutModalOpen(true)} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] transition-colors p-1 shrink-0">
@@ -669,15 +668,14 @@ export default function App() {
               <>
                 <button 
                   onClick={() => setView('profile')}
-                  className="w-8 h-8 rounded-full overflow-hidden border-2 border-[var(--color-primary-100)]"
+                  className="w-8 h-8 rounded-full overflow-hidden border-2 border-[var(--color-primary-100)] flex items-center justify-center"
                 >
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    <div className="w-full h-full bg-[var(--color-primary-50)] flex items-center justify-center">
-                      <Users size={14} className="text-[var(--color-primary-600)]" />
-                    </div>
-                  )}
+                  <UserAvatar 
+                    src={userProfile?.photoURL || user.photoURL} 
+                    name={userProfile?.displayName || user.displayName} 
+                    className="w-full h-full"
+                    iconSize={14}
+                  />
                 </button>
                 <button onClick={() => setIsLogoutModalOpen(true)} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] p-2">
                   <LogOut size={20} />

@@ -12,9 +12,9 @@ export const Logo: React.FC<LogoProps> = ({ className = "w-12 h-12", showText = 
 
   const logoIcon = !hasError ? (
     <img 
-      src="/file_000000009a1071f587f9c41986550a4b.png" 
+      src="/app-logo.jpg" 
       alt="REINO Logo" 
-      className={`${className} object-contain drop-shadow-xl transition-transform hover:scale-105`}
+      className={`${className} object-cover rounded-2xl shadow-md border border-primary/20 transition-transform hover:scale-105`}
       referrerPolicy="no-referrer"
       onError={() => setHasError(true)}
     />

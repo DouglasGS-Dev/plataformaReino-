@@ -8,7 +8,7 @@ import { Post, PostMedia, Comment } from '../types';
 import { compressImage, formatFileSize } from '../utils/media';
 import { MediaCarousel } from './MediaCarousel';
 
-import { ConfirmModal, Toast } from './UIComponents';
+import { ConfirmModal, Toast, UserAvatar } from './UIComponents';
 
 interface Props {
   churchId: string;
@@ -56,19 +56,11 @@ const PostComments = ({ postId, userRole, onDeleteComment }: { postId: string, u
     <div className="space-y-4 mt-4">
       {comments.map((comment) => (
         <div key={comment.id} className="flex gap-3 group">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center overflow-hidden shrink-0">
-            {comment.authorPhoto ? (
-              <img 
-                src={comment.authorPhoto} 
-                alt={comment.authorName} 
-                className="w-full h-full object-cover" 
-                referrerPolicy="no-referrer" 
-                loading="lazy"
-              />
-            ) : (
-              <User className="text-[var(--color-text-tertiary)]" size={16} />
-            )}
-          </div>
+          <UserAvatar 
+            src={comment.authorPhoto} 
+            name={comment.authorName} 
+            size="sm"
+          />
           <div className="flex-1">
             <div className="bg-[var(--color-surface)] rounded-2xl px-4 py-2 border border-[var(--color-border)]">
               <div className="flex items-center justify-between mb-1">
@@ -285,6 +277,19 @@ const CustomAudioPlayer = ({
 }; */
 
 export default function CommunityFeed({ churchId, userRole }: Props) {
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const unsubscribe = onSnapshot(userRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setCurrentUserProfile(snapshot.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -641,8 +646,8 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
           id: postId,
           churchId,
           authorId: auth.currentUser.uid,
-          authorName: auth.currentUser.displayName || 'Membro',
-          authorPhoto: auth.currentUser.photoURL || '',
+          authorName: currentUserProfile?.displayName || auth.currentUser.displayName || 'Membro',
+          authorPhoto: currentUserProfile?.photoURL || auth.currentUser.photoURL || '',
           content: newPost,
           type: postType,
           isPrivate: postType === 'prayer' ? isPrivate : false,
@@ -658,17 +663,19 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
 
         try {
           await setDoc(doc(db, 'posts', postId), post);
-        } catch (error) {
+          showToast('Publicação compartilhada com sucesso!');
+          setNewPost('');
+          setBibleVerse('');
+          setSelectedMedia([]);
+          setAspectRatio('16:9');
+          setPostType('prayer');
+          setIsPrivate(false);
+        } catch (error: any) {
+          console.error("Error creating post doc:", error);
           handleFirestoreError(error, OperationType.CREATE, path);
+          showToast('Erro ao criar publicação. Verifique suas permissões.', 'error');
         }
-        showToast('Publicação compartilhada com sucesso!');
       }
-      setNewPost('');
-      setBibleVerse('');
-      setSelectedMedia([]);
-      setAspectRatio('16:9');
-      setPostType('prayer');
-      setIsPrivate(false);
     } catch (error) {
       console.error("Error saving post:", error);
     } finally {
@@ -678,11 +685,17 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
 
   const handleDelete = async () => {
     if (!postToDelete) return;
+    const targetId = postToDelete;
+    
+    // Optimistically update UI
+    setPosts(prev => prev.filter(p => p.id !== targetId));
+    setPostToDelete(null);
+
     try {
-      const post = posts.find(p => p.id === postToDelete);
+      const post = posts.find(p => p.id === targetId);
       if (post?.media) {
         for (const media of post.media) {
-          if (media.id) {
+          if (media.id && media.url && !media.url.startsWith('data:')) {
             const storagePath = `churches/${churchId}/posts/${media.id}`;
             const storageRef = ref(storage, storagePath);
             try {
@@ -693,25 +706,25 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
           }
         }
       }
-      const path = `posts/${postToDelete}`;
+
+      const path = `posts/${targetId}`;
       try {
-        const batch = writeBatch(db);
-        
-        // 1. Delete the post itself
-        batch.delete(doc(db, 'posts', postToDelete));
-        
-        // 2. Delete all comments for this post
-        const commentsSnapshot = await getDocs(collection(db, 'posts', postToDelete, 'comments'));
-        commentsSnapshot.forEach(d => batch.delete(d.ref));
-        
-        await batch.commit();
+        // Delete subcollection comments first
+        const commentsSnapshot = await getDocs(collection(db, 'posts', targetId, 'comments'));
+        if (!commentsSnapshot.empty) {
+          const commentDeletes = commentsSnapshot.docs.map(d => deleteDoc(d.ref).catch(err => console.warn('Comment delete warning:', err)));
+          await Promise.all(commentDeletes);
+        }
+
+        // Delete post document
+        await deleteDoc(doc(db, 'posts', targetId));
+        showToast('Publicação excluída com sucesso!');
       } catch (error) {
+        console.error("Error deleting post doc from Firestore:", error);
         handleFirestoreError(error, OperationType.DELETE, path);
       }
-      setPostToDelete(null);
-      showToast('Publicação excluída com sucesso!');
     } catch (error) {
-      console.error("Error deleting post:", error);
+      console.error("Error in handleDelete sequence:", error);
       showToast('Erro ao excluir publicação.', 'error');
     }
   };
@@ -776,8 +789,8 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
       id: commentId,
       postId,
       authorId: auth.currentUser.uid,
-      authorName: auth.currentUser.displayName || 'Membro',
-      authorPhoto: auth.currentUser.photoURL || '',
+      authorName: currentUserProfile?.displayName || auth.currentUser.displayName || 'Membro',
+      authorPhoto: currentUserProfile?.photoURL || auth.currentUser.photoURL || '',
       authorRole: userRole,
       content: newComment,
       createdAt: serverTimestamp()
@@ -991,13 +1004,11 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
           </div>
         )}
         <div className="flex gap-4 mb-4">
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center overflow-hidden shrink-0 border-2 border-white shadow-sm">
-            {auth.currentUser?.photoURL ? (
-              <img src={auth.currentUser.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <User className="text-primary" size={24} />
-            )}
-          </div>
+          <UserAvatar 
+            src={currentUserProfile?.photoURL || auth.currentUser?.photoURL} 
+            name={currentUserProfile?.displayName || auth.currentUser?.displayName} 
+            size="lg"
+          />
           <div className="flex-1">
             <textarea
               value={newPost}
@@ -1295,19 +1306,11 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-[var(--color-surface)] border-2 border-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                        {post.authorPhoto ? (
-                          <img 
-                            src={post.authorPhoto} 
-                            alt={post.authorName} 
-                            className="w-full h-full object-cover" 
-                            referrerPolicy="no-referrer" 
-                            loading="lazy"
-                          />
-                        ) : (
-                          <User className="text-[var(--color-text-tertiary)]" size={24} />
-                        )}
-                      </div>
+                      <UserAvatar 
+                        src={post.authorPhoto} 
+                        name={post.authorName} 
+                        size="lg"
+                      />
                       <div>
                         <h4 className="font-bold text-[var(--color-text-primary)] text-base">{post.authorName}</h4>
                         <span className="text-xs text-[var(--color-text-tertiary)] font-medium">
@@ -1482,19 +1485,11 @@ export default function CommunityFeed({ churchId, userRole }: Props) {
                           />
                           
                           <div className="flex gap-3 mt-4">
-                            <div className="w-8 h-8 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center overflow-hidden shrink-0">
-                              {auth.currentUser?.photoURL ? (
-                                <img 
-                                  src={auth.currentUser.photoURL} 
-                                  alt="Profile" 
-                                  className="w-full h-full object-cover" 
-                                  referrerPolicy="no-referrer" 
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <User className="text-[var(--color-text-tertiary)]" size={16} />
-                              )}
-                            </div>
+                            <UserAvatar 
+                              src={currentUserProfile?.photoURL || auth.currentUser?.photoURL} 
+                              name={currentUserProfile?.displayName || auth.currentUser?.displayName} 
+                              size="sm"
+                            />
                             <div className="flex-1 flex items-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full px-4 py-1 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all shadow-inner">
                               <input
                                 type="text"

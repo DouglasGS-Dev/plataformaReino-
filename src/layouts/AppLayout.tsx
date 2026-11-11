@@ -16,6 +16,7 @@ import { Logo } from '../components/Logo';
 import { NotificationService } from '../services/notificationService';
 import Onboarding from '../components/Onboarding';
 import InstallAppModal from '../components/InstallAppModal';
+import { UserAvatar } from '../components/UIComponents';
 
 export default function AppLayout() {
   const [user, setUser] = useState<User | null>(null);
@@ -163,11 +164,28 @@ export default function AppLayout() {
 
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium animate-pulse">Carregando...</p>
-        </div>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/30 via-slate-950 to-slate-950 pointer-events-none" />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="relative z-10 flex flex-col items-center gap-6 max-w-sm text-center"
+        >
+          <div className="p-3 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
+            <img 
+              src="/splash-banner.jpg" 
+              alt="REINO ON FIRE" 
+              className="w-full max-w-[300px] h-auto object-contain rounded-2xl"
+            />
+          </div>
+          <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
+            <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-slate-300 text-xs font-bold tracking-widest uppercase animate-pulse">
+              Entrando no Reino...
+            </p>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -262,16 +280,14 @@ export default function AppLayout() {
           {user ? (
             <div className={`flex items-center bg-slate-50 p-3 rounded-xl border border-slate-100 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
               <NavLink to="/app/profile" className={`flex items-center gap-3 overflow-hidden text-left hover:bg-slate-100 p-1 rounded-lg transition-colors flex-1 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
-                ) : (
-                  <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center shrink-0">
-                    <UserIcon size={14} className="text-primary" />
-                  </div>
-                )}
+                <UserAvatar 
+                  src={userProfile?.photoURL || user.photoURL} 
+                  name={userProfile?.displayName || user.displayName} 
+                  size="sm"
+                />
                 {!isSidebarCollapsed && (
                   <div className="text-sm font-medium truncate text-slate-900">
-                    {user.displayName || 'Usuário'}
+                    {userProfile?.displayName || user.displayName || 'Usuário'}
                   </div>
                 )}
               </NavLink>
@@ -303,14 +319,13 @@ export default function AppLayout() {
           </button>
           <EnvironmentSwitcher userProfile={userProfile} />
           {user ? (
-            <NavLink to="/app/profile" className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-100">
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full bg-primary-50 flex items-center justify-center">
-                  <UserIcon size={14} className="text-primary" />
-                </div>
-              )}
+            <NavLink to="/app/profile" className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-100 flex items-center justify-center">
+              <UserAvatar 
+                src={userProfile?.photoURL || user.photoURL} 
+                name={userProfile?.displayName || user.displayName} 
+                className="w-full h-full"
+                iconSize={14}
+              />
             </NavLink>
           ) : (
             <button onClick={() => setIsLoginModalOpen(true)} className="text-primary font-medium text-sm px-3 py-1.5 bg-primary-50 rounded-lg">

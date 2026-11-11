@@ -22,6 +22,13 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
+    if (error?.message?.includes('Failed to fetch dynamically imported module') || error?.message?.includes('dynamically imported')) {
+      const reloaded = sessionStorage.getItem('chunk_reload');
+      if (!reloaded) {
+        sessionStorage.setItem('chunk_reload', 'true');
+        window.location.reload();
+      }
+    }
   }
 
   public render() {

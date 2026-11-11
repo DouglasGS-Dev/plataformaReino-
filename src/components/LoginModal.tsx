@@ -19,12 +19,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin, loadi
       showCloseButton={true}
     >
       <div className="space-y-6">
-        <div className="relative h-32 primary-gradient flex items-center justify-center overflow-hidden -mx-6 -mt-6">
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
-          </div>
-          <Sparkles className="text-white/40 absolute -right-4 -top-4 w-24 h-24 rotate-12" />
-          <Logo className="text-white w-12 h-12 relative z-10" showText={false} />
+        <div className="relative bg-slate-950 p-6 flex items-center justify-center overflow-hidden -mx-6 -mt-6 border-b border-white/10">
+          <img 
+            src="/splash-banner.jpg" 
+            alt="REINO ONFIRE" 
+            className="h-28 w-auto object-contain rounded-xl shadow-lg"
+          />
         </div>
 
         <div className="text-center space-y-2">

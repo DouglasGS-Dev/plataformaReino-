@@ -108,9 +108,19 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             
             {steps[step].type === 'default' && (
               <>
-                <div className={`mx-auto flex h-32 w-32 items-center justify-center rounded-[2rem] shadow-sm ${steps[step].color}`}>
-                  {steps[step].icon}
-                </div>
+                {step === 0 ? (
+                  <div className="mx-auto max-w-[280px] p-2 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl mb-4">
+                    <img 
+                      src="/splash-banner.jpg" 
+                      alt="REINO ON FIRE" 
+                      className="w-full h-auto object-contain rounded-2xl"
+                    />
+                  </div>
+                ) : (
+                  <div className={`mx-auto flex h-32 w-32 items-center justify-center rounded-[2rem] shadow-sm ${steps[step].color}`}>
+                    {steps[step].icon}
+                  </div>
+                )}
                 <div className="space-y-3 px-4">
                   <h1 className={`text-3xl font-extrabold tracking-tight ${step === 0 ? 'text-white' : 'text-slate-900'}`}>{steps[step].title}</h1>
                   <p className={`text-lg leading-relaxed ${step === 0 ? 'text-slate-300' : 'text-slate-600'}`}>{steps[step].description}</p>

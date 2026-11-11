@@ -69,21 +69,22 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
     }
   };
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       setMessage({ type: 'error', text: 'Por favor, selecione uma imagem válida.' });
       return;
     }
 
+    setSelectedFile(file);
     setIsUploading(true);
     setMessage(null);
 
     try {
-      // Create a FileReader to read the image
       const reader = new FileReader();
       reader.readAsDataURL(file);
       
@@ -92,7 +93,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
         img.src = event.target?.result as string;
         
         img.onload = () => {
-          // Resize image using canvas
           const canvas = document.createElement('canvas');
           const MAX_WIDTH = 300;
           const MAX_HEIGHT = 300;
@@ -116,10 +116,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
           
-          // Get compressed base64 string
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
           setFormData(prev => ({ ...prev, photoURL: dataUrl }));
-          setMessage({ type: 'success', text: 'Foto carregada com sucesso!' });
+          setMessage({ type: 'success', text: 'Foto selecionada! Clique em "Salvar Alterações".' });
           setIsUploading(false);
           
           if (fileInputRef.current) {
@@ -150,19 +149,77 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profile, onUpdate }) =
     setMessage(null);
 
     try {
+      let finalPhotoURL = formData.photoURL || '';
+
+      if (selectedFile || (finalPhotoURL && finalPhotoURL.startsWith('data:image/'))) {
+        try {
+          const { ref: storageRefFn, uploadBytesResumable, getDownloadURL: getUrlFn } = await import('firebase/storage');
+          const { storage } = await import('../firebase');
+          const fileId = `profile_${profile.uid}_${Date.now()}.jpg`;
+          const storagePath = `users/${profile.uid}/${fileId}`;
+          const storageRef = storageRefFn(storage, storagePath);
+
+          let uploadTarget: Blob | File;
+          if (selectedFile) {
+            uploadTarget = selectedFile;
+          } else {
+            const response = await fetch(finalPhotoURL);
+            uploadTarget = await response.blob();
+          }
+
+          const uploadTask = uploadBytesResumable(storageRef, uploadTarget);
+
+          finalPhotoURL = await new Promise<string>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Storage upload timeout'));
+            }, 5000);
+
+            uploadTask.on(
+              'state_changed',
+              null,
+              (err) => {
+                clearTimeout(timeout);
+                reject(err);
+              },
+              async () => {
+                clearTimeout(timeout);
+                try {
+                  const url = await getUrlFn(uploadTask.snapshot.ref);
+                  resolve(url);
+                } catch (e) {
+                  reject(e);
+                }
+              }
+            );
+          });
+        } catch (storageErr) {
+          console.warn('Firebase Storage upload failed/timeout. Saving compressed image to Firestore:', storageErr);
+        }
+      }
+
       const userRef = doc(db, 'users', profile.uid);
-      const updateData = {
-        ...formData,
+      const cleanUpdateData: Record<string, any> = {
         updatedAt: serverTimestamp()
       };
 
-      await updateDoc(userRef, updateData);
+      if (formData.displayName !== undefined) cleanUpdateData.displayName = formData.displayName;
+      cleanUpdateData.photoURL = finalPhotoURL;
+      if (formData.bio !== undefined) cleanUpdateData.bio = formData.bio;
+      if (formData.phone !== undefined) cleanUpdateData.phone = formData.phone;
+      if (formData.birthDate !== undefined) cleanUpdateData.birthDate = formData.birthDate;
+      if (formData.ministry !== undefined) cleanUpdateData.ministry = formData.ministry;
+      if (formData.socialLinks !== undefined) cleanUpdateData.socialLinks = formData.socialLinks;
+
+      await updateDoc(userRef, cleanUpdateData);
       
-      onUpdate({
+      const updatedProfile: UserProfileType = {
         ...profile,
         ...formData,
+        photoURL: finalPhotoURL,
         updatedAt: new Date()
-      } as UserProfileType);
+      } as UserProfileType;
+
+      onUpdate(updatedProfile);
 
       setIsEditing(false);
       setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
